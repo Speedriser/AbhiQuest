@@ -59,6 +59,9 @@
             <span>&#129504;</span>
             <span class="logo-name">RADT<span class="logo-accent">Quest</span></span>
           </div>
+          <div class="landing-nav-links">
+            <a class="landing-nav-link" href="#parent-workbooks" onclick="document.getElementById('parent-workbooks').scrollIntoView({behavior:'smooth'});return false;">📄 Free Workbooks</a>
+          </div>
           <div class="landing-nav-actions">
             <button class="btn btn-ghost-white" onclick="showAuth('login')">Log In</button>
             <button class="btn btn-white" onclick="showAuth('register')">Sign Up Free</button>
@@ -140,6 +143,75 @@
               <h3>Beat the Leaderboard</h3>
               <p>Challenge friends with a code and climb to the top of the weekly rankings.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== FOR PARENTS – WORKBOOK GENERATOR ===== -->
+      <section class="workbook-section" id="parent-workbooks">
+        <div class="section-inner">
+          <div class="wb-section-header">
+            <div class="wb-badge">📄 For Parents &amp; Teachers</div>
+            <h2 class="section-title wb-title">Free Printable Workbooks</h2>
+            <p class="wb-subtitle">
+              Generate a custom 20-question PDF workbook in seconds — perfectly aligned to your child's grade.
+              Print it out, work through it together, then check with the answer key inside!
+            </p>
+          </div>
+
+          <div class="wb-builder-card">
+            <!-- Step 1: Subject -->
+            <div class="wb-step">
+              <div class="wb-step-label"><span class="wb-step-num">1</span> Choose Subject</div>
+              <div class="wb-subj-row">
+                <button class="wb-subj-btn math" onclick="wbSelectSubject('math', this)">
+                  <span class="wb-subj-icon">🧮</span>
+                  <span class="wb-subj-name">Mathematics</span>
+                  <span class="wb-subj-sub">Addition · Subtraction · Multiplication · Division · Word Problems</span>
+                </button>
+                <button class="wb-subj-btn english" onclick="wbSelectSubject('english', this)">
+                  <span class="wb-subj-icon">📖</span>
+                  <span class="wb-subj-name">English</span>
+                  <span class="wb-subj-sub">Spelling · Vocabulary · Grammar · Literary Techniques</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: Grade -->
+            <div class="wb-step">
+              <div class="wb-step-label"><span class="wb-step-num">2</span> Choose Grade</div>
+              <div class="wb-grade-row">
+                <button class="wb-grade-btn" onclick="wbSelectGrade('1', this)"><span class="wb-g-num">1</span><span class="wb-g-age">Age 5–6</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('2', this)"><span class="wb-g-num">2</span><span class="wb-g-age">Age 6–7</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('3', this)"><span class="wb-g-num">3</span><span class="wb-g-age">Age 7–8</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('4', this)"><span class="wb-g-num">4</span><span class="wb-g-age">Age 8–9</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('5', this)"><span class="wb-g-num">5</span><span class="wb-g-age">Age 9–10</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('6', this)"><span class="wb-g-num">6</span><span class="wb-g-age">Age 10–11</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('7', this)"><span class="wb-g-num">7</span><span class="wb-g-age">Age 11–12</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('8', this)"><span class="wb-g-num">8</span><span class="wb-g-age">Age 12–13</span></button>
+              </div>
+            </div>
+
+            <!-- Step 3: Download -->
+            <div class="wb-step wb-step-download">
+              <div class="wb-step-label"><span class="wb-step-num">3</span> Download &amp; Print</div>
+              <button id="wb-download-btn" class="btn wb-download-btn" disabled onclick="wbDownload()">
+                <i class="fas fa-file-pdf"></i> Choose Subject &amp; Grade to Download
+              </button>
+              <p class="wb-dl-note">
+                <i class="fas fa-lock"></i> No sign-up needed &nbsp;·&nbsp;
+                <i class="fas fa-random"></i> Random questions every download &nbsp;·&nbsp;
+                <i class="fas fa-check-double"></i> Answer key included
+              </p>
+            </div>
+          </div>
+
+          <!-- Feature pills -->
+          <div class="wb-features-row">
+            <div class="wb-feat"><span>📐</span> UK National Curriculum &amp; US Common Core aligned</div>
+            <div class="wb-feat"><span>🖨️</span> Print-ready A4 PDF layout</div>
+            <div class="wb-feat"><span>🎲</span> Fresh random questions each time</div>
+            <div class="wb-feat"><span>🔑</span> Full answer key on final page</div>
           </div>
         </div>
       </section>
@@ -804,5 +876,8 @@
 
   <script src="js/questions.js"></script>
   <script src="js/app.js"></script>
+  <!-- jsPDF for client-side workbook PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/workbook.js"></script>
 </body>
 </html>

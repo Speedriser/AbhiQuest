@@ -1121,3 +1121,238 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
   .quiz-page-wrap { padding: 20px 16px 40px; }
   .hdr-user span:nth-child(2) { display: none; }
 }
+
+/* =============================================
+   PARENT WORKBOOK SECTION
+   ============================================= */
+.landing-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+.landing-nav-link {
+  color: rgba(255,255,255,0.92);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.12);
+  transition: background var(--transition);
+}
+.landing-nav-link:hover { background: rgba(255,255,255,0.22); }
+
+.workbook-section {
+  background: linear-gradient(180deg, #f0f4ff 0%, #fff 100%);
+  padding: 80px 0 64px;
+}
+.wb-section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.wb-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--purple), var(--blue));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+.wb-title {
+  font-size: clamp(26px, 4vw, 38px);
+  color: var(--dark);
+  margin-bottom: 12px;
+}
+.wb-subtitle {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ── Builder Card ── */
+.wb-builder-card {
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 40px;
+  box-shadow: var(--shadow-lg);
+  max-width: 860px;
+  margin: 0 auto 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.wb-step-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 14px;
+  font-family: 'Poppins', sans-serif;
+}
+.wb-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* Subject buttons */
+.wb-subj-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.wb-subj-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px 22px;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+}
+.wb-subj-btn:hover {
+  border-color: var(--purple);
+  background: var(--purple-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.wb-subj-btn.active {
+  border-color: var(--green);
+  background: var(--green-light);
+  box-shadow: 0 0 0 3px rgba(88,204,2,.15);
+}
+.wb-subj-btn.math.active  { border-color: var(--blue);   background: #e6f7ff; }
+.wb-subj-btn.english.active { border-color: var(--purple); background: var(--purple-light); }
+.wb-subj-icon { font-size: 28px; line-height: 1; }
+.wb-subj-name { font-size: 17px; font-weight: 800; font-family: 'Poppins', sans-serif; color: var(--dark); }
+.wb-subj-sub  { font-size: 12px; font-weight: 600; color: var(--text-muted); line-height: 1.4; }
+
+/* Grade buttons */
+.wb-grade-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+.wb-grade-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 4px;
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.wb-grade-btn:hover {
+  border-color: var(--blue);
+  background: var(--blue-light, #e6f7ff);
+  transform: translateY(-2px);
+}
+.wb-grade-btn.active {
+  border-color: var(--green);
+  background: var(--green-light);
+  box-shadow: 0 0 0 3px rgba(88,204,2,.15);
+}
+.wb-g-num  { font-size: 22px; font-weight: 900; font-family: 'Poppins', sans-serif; line-height: 1; color: var(--dark); }
+.wb-g-age  { font-size: 9px;  font-weight: 700; color: var(--text-muted); }
+
+/* Download step */
+.wb-step-download { text-align: center; }
+.wb-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  font-size: 17px;
+  font-weight: 800;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, var(--red, #e74c3c), #c0392b);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 4px 18px rgba(231, 76, 60, 0.35);
+}
+.wb-download-btn:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(231, 76, 60, 0.45);
+}
+.wb-download-btn:not(:disabled) {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+.wb-download-btn:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.wb-dl-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.wb-dl-note i { color: var(--green); margin-right: 2px; }
+
+/* Feature pills row */
+.wb-features-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.wb-feat {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.4;
+}
+.wb-feat span { font-size: 22px; flex-shrink: 0; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wb-builder-card   { padding: 24px 20px; }
+  .wb-subj-row       { grid-template-columns: 1fr; }
+  .wb-grade-row      { grid-template-columns: repeat(4, 1fr); }
+  .wb-features-row   { grid-template-columns: repeat(2, 1fr); }
+  .landing-nav-links { display: none; }
+}
+@media (max-width: 480px) {
+  .wb-grade-row      { grid-template-columns: repeat(4, 1fr); }
+  .wb-features-row   { grid-template-columns: 1fr 1fr; }
+  .wb-download-btn   { font-size: 14px; padding: 14px 20px; }
+}
