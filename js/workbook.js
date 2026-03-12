@@ -427,42 +427,46 @@ function generateWorkbookPDF(subject, topic, grade) {
   function drawQ(qNum, q, qx, qy, colW) {
     const headerCol = qNum % 2 === 1 ? WB.purple : WB.blue;
 
-    // Question number banner — taller so there is clear space above the text
-    const BANNER_H = 10;
+    // ── Banner (8 mm tall) ──────────────────────
+    const BANNER_H = 8;
     fillRR(qx, qy, colW, BANNER_H, headerCol, 2);
     sf('bold', 10, WB.white);
-    doc.text('Q' + qNum, qx + 4, qy + 7);   // baseline well inside the banner
-    qy += BANNER_H + 7;                       // 7 mm gap from banner bottom to text baseline
-                                              // (cap-height of 11pt ≈ 3.9 mm → top of text
-                                              //  is 3.1 mm clear of the banner)
+    doc.text('Q' + qNum, qx + 4, qy + 5.8);   // baseline centred inside banner
 
-    // Question text — larger font, generous line spacing
-    sf('normal', 11, WB.dark);
+    // ── Gap explanation ─────────────────────────
+    // banner ends at qy + 8 mm
+    // qy moves to qy + 8 + 9.5 = qy + 17.5
+    // 10 pt cap-height ≈ 3.5 mm  →  text TOP = 9.5 - 3.5 = 6 mm below banner ✓
+    qy += BANNER_H + 9.5;
+
+    // ── Question text (10 pt, left-padded) ──────
+    sf('normal', 10, WB.dark);
     const safeQ   = wb_safe(q.q);
-    const wrapped = doc.splitTextToSize(safeQ, colW - 5);
-    doc.text(wrapped, qx + 3, qy);
-    qy += wrapped.length * 6 + 4;
+    const wrapped = doc.splitTextToSize(safeQ, colW - 6);
+    doc.text(wrapped, qx + 4, qy);
+    qy += wrapped.length * 5 + 3;
 
-    // Options A-D
+    // ── Options A – D ────────────────────────────
     q.options.slice(0, 4).forEach((opt, i) => {
       const safeOpt = wb_safe(opt);
 
-      // Letter badge — taller to match bigger font
+      // Letter badge
       doc.setFillColor(...WB_OPT_COLORS[i]);
-      doc.roundedRect(qx + 1, qy - 5.5, 8, 7.5, 1.5, 1.5, 'F');
-      sf('bold', 9, WB.white);
-      doc.text(LETTERS[i], qx + 3.5, qy + 0.5);
+      doc.roundedRect(qx + 4, qy - 4.8, 7, 6, 1.5, 1.5, 'F');
+      sf('bold', 8.5, WB.white);
+      doc.text(LETTERS[i], qx + 6.3, qy + 0.2);
 
-      // Option text — match question font size
-      sf('normal', 10, WB.dark);
-      const optLines = doc.splitTextToSize(safeOpt, colW - 14);
-      doc.text(optLines, qx + 12, qy + 0.5);
-      qy += optLines.length * 5.5 + 2.5;
+      // Option text (9.5 pt)
+      sf('normal', 9.5, WB.dark);
+      const optLines = doc.splitTextToSize(safeOpt, colW - 16);
+      doc.text(optLines, qx + 14, qy + 0.2);
+      qy += optLines.length * 4.5 + 2;
     });
 
-    qy += 3;
-    hLine(qx, qy, qx + colW, WB.line, 0.25);
-    return qy + 5;
+    // ── Separator ───────────────────────────────
+    qy += 2;
+    hLine(qx, qy, qx + colW, WB.line, 0.3);
+    return qy + 4;
   }
 
   const COL_W   = (CW - 6) / 2;  // two columns per page
