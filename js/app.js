@@ -410,21 +410,34 @@ function startQuiz() {
     noTimer,
     answerTimes: [],
     answers: [],
+    wrongQuestions: [],   // full question objects answered incorrectly
     subject: currentSubject,
     topic: currentTopic,
     difficulty: currentGrade,
     grade: currentGrade,
-    qStartTime: 0
+    qStartTime: 0,
+    isReviewRound: false
   };
 
   showScreen('quiz');
   renderQuestion();
 }
 
-function generateQuestions(subj, topic, diff, n) {
+function generateQuestions(subj, topic, grade, n) {
   const qs = [];
-  for (let i = 0; i < n; i++) {
-    qs.push(generateOneQuestion(subj, topic, diff));
+  const seen = new Set();
+  let attempts = 0;
+  while (qs.length < n && attempts < n * 25) {
+    attempts++;
+    const q = generateOneQuestion(subj, topic, grade);
+    if (!seen.has(q.question)) {
+      seen.add(q.question);
+      qs.push(q);
+    }
+  }
+  // Safety fallback: pool exhausted — allow repeats to fill remaining slots
+  while (qs.length < n) {
+    qs.push(generateOneQuestion(subj, topic, grade));
   }
   return qs;
 }
@@ -507,6 +520,11 @@ function answerQuestion(selected, btn) {
     btn.classList.add('wrong');
     s.streak = 0;
     s.wrong++;
+    // Track wrong question for review round (avoid duplicates)
+    if (!s.isReviewRound) {
+      const alreadyTracked = s.wrongQuestions.some(wq => wq.question === q.question);
+      if (!alreadyTracked) s.wrongQuestions.push(q);
+    }
     // Highlight correct
     document.querySelectorAll('.answer-btn').forEach(b => {
       if (b.textContent === q.answer) b.classList.add('correct');
@@ -636,6 +654,17 @@ function finishQuiz() {
     }
   }
 
+  // Show / hide "Review Wrong Answers" button
+  const reviewBtn = document.getElementById('btn-review-wrong');
+  if (reviewBtn) {
+    if (!s.isReviewRound && s.wrongQuestions.length > 0) {
+      reviewBtn.style.display = '';
+      reviewBtn.textContent = '🔁 Review ' + s.wrongQuestions.length + ' Wrong Answer' + (s.wrongQuestions.length > 1 ? 's' : '');
+    } else {
+      reviewBtn.style.display = 'none';
+    }
+  }
+
   if (pct >= 70) launchConfetti();
   showScreen('results');
 }
@@ -660,6 +689,41 @@ function replayQuiz() {
     const gradeEl = document.querySelector(`.grade-card[data-grade="${savedGrade}"]`);
     if (gradeEl)  selectGrade(savedGrade, gradeEl);
   }, 100);
+}
+
+function reviewWrongAnswers() {
+  if (!quizState || !quizState.wrongQuestions || quizState.wrongQuestions.length === 0) return;
+  const wrongQs = quizState.wrongQuestions;
+
+  // Shuffle the review questions so they appear in a different order
+  const shuffled = [...wrongQs].sort(() => Math.random() - 0.5);
+
+  const doubleXp = currentUser && (currentUser.activePowerup === 'pu_2x');
+  const noTimer  = currentUser && (currentUser.activePowerup === 'pu_shield');
+
+  quizState = {
+    questions: shuffled,
+    current: 0,
+    correct: 0,
+    wrong: 0,
+    coins: 0,
+    streak: 0,
+    maxStreak: 0,
+    doubleXp,
+    noTimer,
+    answerTimes: [],
+    answers: [],
+    wrongQuestions: [],
+    subject: currentSubject,
+    topic: currentTopic,
+    difficulty: currentGrade,
+    grade: currentGrade,
+    qStartTime: 0,
+    isReviewRound: true
+  };
+
+  showScreen('quiz');
+  renderQuestion();
 }
 
 // ─── SHOP ──────────────────────────────────────

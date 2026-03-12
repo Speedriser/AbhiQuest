@@ -293,6 +293,8 @@ a { cursor: pointer; text-decoration: none; color: inherit; }
 
 .btn-outline { background: transparent; color: var(--blue); border: 2px solid var(--blue); }
 .btn-outline:hover { background: var(--blue-light); }
+.btn-warning { background: linear-gradient(135deg,#ff9600,#ffcc00); color: #fff; border: none; font-weight: 800; }
+.btn-warning:hover { background: linear-gradient(135deg,#e08700,#f0b800); transform: translateY(-2px); }
 
 .btn-danger-outline {
   background: transparent; color: var(--red); border: 2px solid var(--red);
