@@ -587,6 +587,30 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
 .option-icon  { font-size: 28px; display: block; margin-bottom: 6px; }
 .option-label { font-size: 12px; font-weight: 700; color: var(--dark-gray); }
 
+/* Grade selector (replaces old difficulty grid) */
+.grade-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.grade-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 16px 8px;
+  border: 3px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: all var(--transition); text-align: center;
+  background: white;
+}
+.grade-card:hover  { border-color: var(--blue); background: var(--blue-light); transform: translateY(-2px); }
+.grade-card.active { border-color: var(--green); background: var(--green-light); }
+.grade-num {
+  font-size: 26px; font-weight: 900; color: var(--text);
+  font-family: 'Poppins', sans-serif; line-height: 1;
+}
+.grade-card.active .grade-num { color: var(--green-dark); }
+.grade-card:hover  .grade-num { color: var(--blue-dark); }
+.grade-age { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+
+/* Keep old difficulty styles as fallback */
 .difficulty-grid { display: flex; flex-direction: column; gap: 10px; }
 .difficulty-card {
   display: flex; align-items: center; gap: 14px; padding: 14px 18px;

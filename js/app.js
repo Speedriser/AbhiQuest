@@ -60,7 +60,8 @@ let quizState    = null;
 let timerInterval = null;
 let currentSubject = 'math';
 let currentTopic   = null;
-let currentDiff    = null;
+let currentDiff    = null;   // kept for backward-compat
+let currentGrade   = null;   // '1' through '8'
 let currentScreen  = 'landing';
 let challengeQuestions = null;
 
@@ -302,7 +303,7 @@ function renderRecentQuizzes() {
     return `<div class="recent-item">
       <span class="ri-icon">${ico}</span>
       <div class="ri-info">
-        <div class="ri-title">${cap(h.topic)} – ${cap(h.difficulty)}</div>
+        <div class="ri-title">${cap(h.topic)} – Grade ${h.difficulty || h.grade || '?'}</div>
         <div class="ri-meta">${new Date(h.date).toLocaleDateString()}</div>
       </div>
       <span class="ri-score ${cls}">${pct}%</span>
@@ -333,12 +334,13 @@ function renderMiniLeaderboard() {
 function showQuizSetup(subj) {
   currentSubject = subj || 'math';
   currentTopic   = null;
+  currentGrade   = null;
   currentDiff    = null;
   showScreen('quiz-setup');
 
   // Reset selections
   document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.grade-card').forEach(c => c.classList.remove('active'));
   document.getElementById('start-quiz-btn').disabled = true;
 
   // Toggle subject UI
@@ -372,19 +374,27 @@ function selectDifficulty(diff, el) {
   checkStartReady();
 }
 
+function selectGrade(grade, el) {
+  currentGrade = grade;
+  currentDiff  = grade; // backward-compat for challenge/history
+  document.querySelectorAll('.grade-card').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  checkStartReady();
+}
+
 function checkStartReady() {
-  document.getElementById('start-quiz-btn').disabled = !(currentTopic && currentDiff);
+  document.getElementById('start-quiz-btn').disabled = !(currentTopic && currentGrade);
 }
 
 // ─── QUIZ LOGIC ────────────────────────────────
 function startQuiz() {
-  if (!currentTopic || !currentDiff) return;
+  if (!currentTopic || !currentGrade) return;
 
   // Power-up: Double XP active?
   const doubleXp = currentUser && (currentUser.activePowerup === 'pu_2x');
   const noTimer  = currentUser && (currentUser.activePowerup === 'pu_shield');
 
-  const questions = challengeQuestions || generateQuestions(currentSubject, currentTopic, currentDiff, 20);
+  const questions = challengeQuestions || generateQuestions(currentSubject, currentTopic, currentGrade, 20);
   challengeQuestions = null;
 
   quizState = {
@@ -401,7 +411,8 @@ function startQuiz() {
     answers: [],
     subject: currentSubject,
     topic: currentTopic,
-    difficulty: currentDiff,
+    difficulty: currentGrade,
+    grade: currentGrade,
     qStartTime: 0
   };
 
@@ -638,14 +649,15 @@ function getGrade(pct) {
 }
 
 function replayQuiz() {
+  const savedGrade = quizState.grade || quizState.difficulty;
   showScreen('quiz-setup');
   // Re-select the same options
   selectSubject(quizState.subject, true);
   setTimeout(() => {
     const topicEl = document.querySelector(`[data-topic="${quizState.topic}"]`);
     if (topicEl) topicEl.click();
-    const diffEl  = document.querySelector(`[data-diff="${quizState.difficulty}"]`);
-    if (diffEl)  diffEl.click();
+    const gradeEl = document.querySelector(`.grade-card[data-grade="${savedGrade}"]`);
+    if (gradeEl)  selectGrade(savedGrade, gradeEl);
   }, 100);
 }
 
@@ -854,19 +866,21 @@ function switchLbTab(tab, btn) {
 
 // ─── CHALLENGE SYSTEM ──────────────────────────
 function generateChallengeCode() {
-  if (!currentSubject || !currentDiff) {
+  if (!currentSubject || !currentGrade) {
     currentSubject = 'math';
     currentTopic   = 'mixed-math';
-    currentDiff    = 'medium';
+    currentGrade   = '4';
+    currentDiff    = '4';
   }
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   const challengeData = {
     code,
     subject: currentSubject,
     topic: currentTopic || 'mixed-math',
-    difficulty: currentDiff || 'medium',
+    grade: currentGrade || '4',
+    difficulty: currentGrade || '4',
     createdBy: currentUser ? currentUser.name : 'Guest',
-    questions: generateQuestions(currentSubject, currentTopic || 'mixed-math', currentDiff || 'medium', 20),
+    questions: generateQuestions(currentSubject, currentTopic || 'mixed-math', currentGrade || '4', 20),
     timestamp: Date.now()
   };
   localStorage.setItem('radtquest_challenge_' + code, JSON.stringify(challengeData));
@@ -902,7 +916,8 @@ function joinChallengeWithCode(code) {
 
   currentSubject = data.subject;
   currentTopic   = data.topic;
-  currentDiff    = data.difficulty;
+  currentGrade   = data.grade || data.difficulty || '4';
+  currentDiff    = currentGrade;
   challengeQuestions = data.questions;
 
   if (currentUser) { currentUser.usedChallenge = true; if (!currentUser.isGuest) saveUser(currentUser); }
@@ -952,7 +967,7 @@ function renderProfile() {
       return `<div class="qh-item">
         <span class="qh-icon">${ico}</span>
         <div class="qh-info">
-          <div class="qh-title">${cap(h.topic)} – ${cap(h.difficulty)}</div>
+          <div class="qh-title">${cap(h.topic)} – Grade ${h.difficulty || h.grade || '?'}</div>
           <div class="qh-meta">${new Date(h.date).toLocaleDateString()} · ${h.correct}/20 correct</div>
         </div>
         <span class="qh-score ${g}">${h.score}%</span>
@@ -1039,26 +1054,28 @@ function launchConfetti() {
 }
 
 // ─── QUESTION GENERATOR (wrapper) ──────────────
-function generateOneQuestion(subj, topic, diff) {
+function generateOneQuestion(subj, topic, grade) {
   if (subj === 'math') {
-    if (topic === 'addition')       return genAddition(diff);
-    if (topic === 'subtraction')    return genSubtraction(diff);
-    if (topic === 'multiplication') return genMultiplication(diff);
-    if (topic === 'division')       return genDivision(diff);
+    if (topic === 'addition')       return genAddition(grade);
+    if (topic === 'subtraction')    return genSubtraction(grade);
+    if (topic === 'multiplication') return genMultiplication(grade);
+    if (topic === 'division')       return genDivision(grade);
+    if (topic === 'fractions')      return genFractions(grade);
+    if (topic === 'word-problems')  return genWordProblem(grade);
     if (topic === 'mixed-math') {
       const fns = [genAddition, genSubtraction, genMultiplication, genDivision, genWordProblem];
-      return fns[Math.floor(Math.random() * fns.length)](diff);
+      return fns[Math.floor(Math.random() * fns.length)](grade);
     }
   } else {
-    if (topic === 'spelling')       return genSpelling(diff);
-    if (topic === 'vocabulary')     return genVocabulary(diff);
-    if (topic === 'grammar')        return genGrammar(diff);
+    if (topic === 'spelling')       return genSpelling(grade);
+    if (topic === 'vocabulary')     return genVocabulary(grade);
+    if (topic === 'grammar')        return genGrammar(grade);
     if (topic === 'mixed-english') {
       const fns = [genSpelling, genVocabulary, genGrammar];
-      return fns[Math.floor(Math.random() * fns.length)](diff);
+      return fns[Math.floor(Math.random() * fns.length)](grade);
     }
   }
-  return genAddition(diff);
+  return genAddition(grade);
 }
 
 // ─── BOOT ──────────────────────────────────────
