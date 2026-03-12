@@ -52,17 +52,7 @@ const ACHIEVEMENTS = [
   { id:'social',       icon:'👥', name:'Team Player',    desc:'Use the friend challenge feature',  check: u => u.usedChallenge === true },
 ];
 
-// ─── DEMO USERS (simulating other users for leaderboard) ──
-const DEMO_USERS = [
-  { name:'SuperStar_Raj',  avatar:'🦁', points:1850, coins:320, quizzesCompleted:24, bestScore:100, streak:7, mathQuizzes:14, englishQuizzes:10 },
-  { name:'QuizWizard_Amy', avatar:'🐼', points:1620, coins:280, quizzesCompleted:20, bestScore:95,  streak:5, mathQuizzes:10, englishQuizzes:10 },
-  { name:'BrainPower_Max', avatar:'🤖', points:1400, coins:210, quizzesCompleted:18, bestScore:90,  streak:4, mathQuizzes:12, englishQuizzes:6  },
-  { name:'MathKing_Leo',   avatar:'🐉', points:1200, coins:190, quizzesCompleted:15, bestScore:100, streak:6, mathQuizzes:15, englishQuizzes:0  },
-  { name:'SpellBee_Zara',  avatar:'🦋', points:980,  coins:150, quizzesCompleted:12, bestScore:85,  streak:3, mathQuizzes:3,  englishQuizzes:9  },
-  { name:'NumberNinja_Kai',avatar:'🐸', points:820,  coins:120, quizzesCompleted:10, bestScore:80,  streak:2, mathQuizzes:8,  englishQuizzes:2  },
-  { name:'WordSmith_Eva',  avatar:'🦊', points:650,  coins:100, quizzesCompleted:8,  bestScore:75,  streak:1, mathQuizzes:2,  englishQuizzes:6  },
-  { name:'QuickCalc_Tom',  avatar:'🐱', points:480,  coins:80,  quizzesCompleted:6,  bestScore:70,  streak:0, mathQuizzes:5,  englishQuizzes:1  },
-];
+// No demo users — leaderboard shows only real registered players
 
 // ─── STATE ─────────────────────────────────────
 let currentUser  = null;
@@ -321,8 +311,12 @@ function renderRecentQuizzes() {
 }
 
 function renderMiniLeaderboard() {
-  const all = buildAllTimeLeaderboard().slice(0, 5);
+  const all  = buildAllTimeLeaderboard().slice(0, 5);
   const cont = document.getElementById('mini-leaderboard');
+  if (!all.length) {
+    cont.innerHTML = '<p class="empty-state">No players yet — invite friends to compete! 🏆</p>';
+    return;
+  }
   const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
   cont.innerHTML = all.map((p, i) => {
     const isMe = currentUser && p.name === currentUser.name;
@@ -748,9 +742,9 @@ function switchShopTab(tab, btn) {
 // ─── LEADERBOARD ───────────────────────────────
 function buildAllTimeLeaderboard() {
   const realUsers = Object.values(getAllUsers());
-  const combined = [
-    ...DEMO_USERS.map(d => ({ ...d, isDemo: true })),
-    ...realUsers.map(u => ({
+  const combined = realUsers
+    .filter(u => !u.isGuest)
+    .map(u => ({
       name: u.name,
       avatar: getAvatarIcon(u.avatar),
       points: u.points || 0,
@@ -760,78 +754,96 @@ function buildAllTimeLeaderboard() {
       streak: u.streak || 0,
       mathQuizzes: u.mathQuizzes || 0,
       englishQuizzes: u.englishQuizzes || 0,
-      isDemo: false,
       isReal: true,
       email: u.email
-    }))
-  ];
+    }));
   combined.sort((a, b) => b.points - a.points);
   return combined;
 }
 
 function renderLeaderboard(tab) {
   let data = buildAllTimeLeaderboard();
-  if (tab === 'weekly') data = data.filter(p => !p.isDemo || Math.random() > 0.3);
-  if (tab === 'math')   data.sort((a, b) => (b.mathQuizzes || 0) - (a.mathQuizzes || 0));
-  if (tab === 'english') data.sort((a, b) => (b.englishQuizzes || 0) - (a.englishQuizzes || 0));
+  if (tab === 'weekly') {
+    // Weekly: only players who quizzed this week (last 7 days)
+    // Since we don't store exact weekly data, show all sorted by points (real data only)
+    data = [...data];
+  }
+  if (tab === 'math')    data = [...data].sort((a, b) => (b.mathQuizzes || 0) - (a.mathQuizzes || 0));
+  if (tab === 'english') data = [...data].sort((a, b) => (b.englishQuizzes || 0) - (a.englishQuizzes || 0));
 
   // Podium (top 3)
   const podium = document.getElementById('leaderboard-podium');
   const top3   = data.slice(0, 3);
-  const order  = [1, 0, 2]; // display: 2nd, 1st, 3rd
-  podium.innerHTML = order.map(i => {
-    const p = top3[i];
-    if (!p) return '';
-    const place = i + 1;
-    const medal = ['🥇','🥈','🥉'][i];
-    return `<div class="podium-place place-${place}">
-      <div class="podium-avatar">${p.avatar}</div>
-      <div class="podium-name">${p.name}</div>
-      <div class="podium-pts">${p.points} pts</div>
-      <div class="podium-bar"><span class="podium-rank">${medal}</span></div>
-    </div>`;
-  }).join('');
 
-  // Table (all)
+  if (data.length === 0) {
+    podium.innerHTML = `<div style="color:rgba(255,255,255,0.6);text-align:center;padding:20px;font-size:15px;">
+      🏆 No players yet — be the first to take a quiz and claim #1!
+    </div>`;
+  } else {
+    // Display order: 2nd place (left), 1st place (centre), 3rd place (right)
+    const displayOrder = data.length >= 3 ? [1, 0, 2]
+                       : data.length === 2 ? [1, 0]
+                       : [0];
+    podium.innerHTML = displayOrder.map(i => {
+      const p = top3[i];
+      if (!p) return '';
+      const medals = ['🥇','🥈','🥉'];
+      const heights = [90, 70, 55];
+      const place = i + 1;
+      return `<div class="podium-place place-${place}">
+        <div class="podium-avatar">${p.avatar}</div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-pts">${p.points} pts</div>
+        <div class="podium-bar" style="height:${heights[i]}px"><span class="podium-rank">${medals[i]}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Table (all real players)
   const tbody = document.getElementById('leaderboard-table-body');
-  tbody.innerHTML = data.map((p, i) => {
-    const isMe = currentUser && p.name === currentUser.name;
-    const medal = i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1);
-    return `<tr class="${isMe ? 'me' : ''}">
-      <td class="lb-row-rank">${medal}</td>
-      <td><div class="lb-row-player"><span class="lb-row-avatar">${p.avatar}</span>${p.name}${isMe ? ' <strong>(You)</strong>' : ''}</div></td>
-      <td>${p.quizzesCompleted}</td>
-      <td class="lb-row-score">${p.bestScore}%</td>
-      <td class="lb-row-pts">${p.points}</td>
-      <td class="lb-row-streak">${p.streak > 0 ? '🔥 ' + p.streak : '—'}</td>
-    </tr>`;
-  }).join('');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:#9ca3af;font-size:14px;">
+      No players on the leaderboard yet. Sign up and complete a quiz to appear here! 🚀
+    </td></tr>`;
+  } else {
+    tbody.innerHTML = data.map((p, i) => {
+      const isMe = currentUser && p.name === currentUser.name;
+      const medal = i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1);
+      return `<tr class="${isMe ? 'me' : ''}">
+        <td class="lb-row-rank">${medal}</td>
+        <td><div class="lb-row-player"><span class="lb-row-avatar">${p.avatar}</span>${p.name}${isMe ? ' <strong>(You)</strong>' : ''}</div></td>
+        <td>${p.quizzesCompleted}</td>
+        <td class="lb-row-score">${p.bestScore}%</td>
+        <td class="lb-row-pts">${p.points}</td>
+        <td class="lb-row-streak">${p.streak > 0 ? '🔥 ' + p.streak : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
 
   // My rank
-  const myIdx = currentUser ? data.findIndex(p => p.name === currentUser.name) : -1;
+  const myIdx = currentUser && !currentUser.isGuest
+    ? data.findIndex(p => p.name === currentUser.name)
+    : -1;
   document.getElementById('my-rank-num').textContent  = myIdx >= 0 ? '#' + (myIdx + 1) : '#—';
   document.getElementById('my-rank-name').textContent = currentUser ? currentUser.name : '—';
   document.getElementById('my-rank-pts').textContent  = currentUser ? currentUser.points + ' points' : '0 points';
 
-  // Online players (simulated)
+  // Online players (real users only)
   renderOnlinePlayers(data);
-
-  // Sync challenge code
-  const code = document.getElementById('challenge-code');
-  if (code.textContent.includes('—')) {
-    code.textContent = '— — — —';
-  }
 }
 
 function renderOnlinePlayers(data) {
   const el = document.getElementById('online-players');
-  const online = data.slice(0, 6).map(p => `
+  if (!data.length) {
+    el.innerHTML = '<p class="empty-state" style="font-size:13px;padding:8px 0;">No players yet — invite your friends!</p>';
+    return;
+  }
+  el.innerHTML = data.slice(0, 6).map(p => `
     <div class="online-player-item">
       <span class="online-dot"></span>
       <span class="online-name">${p.avatar} ${p.name}</span>
       <span class="online-pts">${p.points} pts</span>
     </div>`).join('');
-  el.innerHTML = online || '<p class="empty-state">No players online</p>';
 }
 
 function switchLbTab(tab, btn) {
