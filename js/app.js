@@ -65,9 +65,65 @@ let currentGrade   = null;   // '1' through '8'
 let currentScreen  = 'landing';
 let challengeQuestions = null;
 
+// ─── SUBJECT CONFIGURATION (extensible) ────────
+// To add a new subject: add an entry here with label, icon, topics, hasDynamicGenerator.
+// The admin Question Manager and quiz system both read from this config.
+const BUILTIN_SUBJECT_CONFIG = {
+  math: {
+    label: 'Maths',
+    icon: '🧮',
+    hasDynamicGenerator: true,   // questions generated procedurally — no static bank to browse
+    topics: {
+      'addition':       'Addition',
+      'subtraction':    'Subtraction',
+      'multiplication': 'Multiplication',
+      'division':       'Division',
+      'fractions':      'Fractions',
+      'word-problems':  'Word Problems',
+      'mixed-math':     'Mixed Maths'
+    }
+  },
+  english: {
+    label: 'English',
+    icon: '📖',
+    hasDynamicGenerator: false,   // questions come from static banks in questions.js
+    topics: {
+      'spelling':       'Spelling',
+      'vocabulary':     'Vocabulary',
+      'grammar':        'Grammar',
+      'mixed-english':  'Mixed English'
+    }
+  }
+};
+
+function getSubjectConfig() {
+  // Returns the subject config. In future this can merge in localStorage-stored custom subjects.
+  return BUILTIN_SUBJECT_CONFIG;
+}
+
 // ─── STORAGE HELPERS ───────────────────────────
-const USERS_KEY   = 'radtquest_users';
-const SESSION_KEY = 'radtquest_session';
+const USERS_KEY              = 'radtquest_users';
+const SESSION_KEY            = 'radtquest_session';
+const CUSTOM_QUESTIONS_KEY   = 'radtquest_custom_questions';
+
+// ─── CUSTOM QUESTION STORAGE ───────────────────
+function getCustomQuestions() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_QUESTIONS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveCustomQuestions(arr) {
+  localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(arr));
+}
+
+/** Returns custom questions that match a quiz request. */
+function getCustomQuestionsForQuiz(subj, topic, grade) {
+  const isMixed = (topic === 'mixed-math' || topic === 'mixed-english');
+  return getCustomQuestions().filter(cq =>
+    cq.subject === subj &&
+    cq.grade   === String(grade) &&
+    (isMixed || cq.topic === topic)
+  );
+}
 
 function getAllUsers() {
   return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
@@ -142,7 +198,7 @@ function showScreen(name) {
   if (name === 'leaderboard') renderLeaderboard('all-time');
   if (name === 'profile')     renderProfile();
   if (name === 'results')     {} // populated by finishQuiz()
-  if (name === 'admin')       { renderAdminOverview(); renderAdminUsers(); renderAdminActivity(); switchAdminTab('overview'); }
+  if (name === 'admin')       { renderAdminOverview(); renderAdminUsers(); renderAdminActivity(); renderAdminQuestions(); switchAdminTab('overview'); }
 }
 
 // ─── AUTH ──────────────────────────────────────
@@ -424,8 +480,28 @@ function startQuiz() {
 }
 
 function generateQuestions(subj, topic, grade, n) {
-  const qs = [];
+  const qs   = [];
   const seen = new Set();
+
+  // 1. Include custom questions first (always appear for their grade/topic)
+  const customPool = getCustomQuestionsForQuiz(subj, topic, grade);
+  const shuffledCustom = [...customPool].sort(() => Math.random() - 0.5);
+  for (const cq of shuffledCustom) {
+    if (qs.length >= n) break;
+    if (!seen.has(cq.question)) {
+      seen.add(cq.question);
+      qs.push({
+        subject:  cq.subject,
+        type:     cq.topic,
+        context:  cq.context || null,
+        question: cq.question,
+        answer:   cq.answer,
+        options:  [...cq.options].sort(() => Math.random() - 0.5)
+      });
+    }
+  }
+
+  // 2. Fill remainder with dynamically-generated / bank questions (deduped)
   let attempts = 0;
   while (qs.length < n && attempts < n * 25) {
     attempts++;
@@ -1196,9 +1272,10 @@ function switchAdminTab(tab) {
   if (navEl) navEl.classList.add('active');
 
   // Lazy-render on first visit to each tab
-  if (tab === 'users')    renderAdminUsers();
-  if (tab === 'activity') renderAdminActivity();
-  if (tab === 'overview') renderAdminOverview();
+  if (tab === 'users')     renderAdminUsers();
+  if (tab === 'activity')  renderAdminActivity();
+  if (tab === 'overview')  renderAdminOverview();
+  if (tab === 'questions') renderAdminQuestions();
 }
 
 function renderAdminOverview() {
@@ -1401,6 +1478,506 @@ function adminDeleteAllUsers() {
       renderAdminOverview();
       showToast('All user accounts deleted.');
     });
+}
+
+// ─── ADMIN: QUESTION MANAGER ───────────────────
+const Q_PAGE_SIZE = 25;
+let _qPage = 1;          // current page in admin question list
+
+/**
+ * Renders the Questions tab content (filters + empty list placeholder).
+ * The actual list is populated by _rebuildQuestionList().
+ */
+function renderAdminQuestions() {
+  const container = document.getElementById('admin-tab-questions');
+  if (!container) return;
+
+  const cfg = getSubjectConfig();
+
+  // Build subject options for filter
+  const subjectOpts = Object.entries(cfg).map(([k, v]) =>
+    `<option value="${k}">${v.icon} ${v.label}</option>`
+  ).join('');
+
+  container.innerHTML = `
+    <div class="admin-page-header">
+      <div>
+        <h1>&#10067; Question Manager</h1>
+        <span class="admin-badge" id="admin-q-count">Loading…</span>
+      </div>
+      <button class="btn btn-primary" onclick="openQuestionModal(null)">
+        <i class="fas fa-plus"></i> Add Question
+      </button>
+    </div>
+
+    <div class="admin-card admin-q-filters">
+      <div class="aq-filter-row">
+        <div class="aq-filter-group">
+          <label>Subject</label>
+          <select id="aq-f-subject" onchange="aqSubjectChanged()">
+            <option value="">All Subjects</option>
+            ${subjectOpts}
+          </select>
+        </div>
+        <div class="aq-filter-group">
+          <label>Grade</label>
+          <select id="aq-f-grade" onchange="filterAdminQuestions()">
+            <option value="">All Grades</option>
+            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Grade ${g}</option>`).join('')}
+          </select>
+        </div>
+        <div class="aq-filter-group">
+          <label>Topic</label>
+          <select id="aq-f-topic" onchange="filterAdminQuestions()">
+            <option value="">All Topics</option>
+          </select>
+        </div>
+        <div class="aq-filter-group">
+          <label>Source</label>
+          <select id="aq-f-source" onchange="filterAdminQuestions()">
+            <option value="">All</option>
+            <option value="custom">Custom only</option>
+            <option value="builtin">Built-in only</option>
+          </select>
+        </div>
+        <div class="aq-filter-group aq-search-group">
+          <label>Search</label>
+          <div class="aq-search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="aq-search" placeholder="Search question text…" oninput="filterAdminQuestions()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="aq-list-container"></div>
+  `;
+
+  _rebuildQuestionList();
+}
+
+/** Called when the subject filter changes — repopulates the topic dropdown then re-filters. */
+function aqSubjectChanged() {
+  const subj = document.getElementById('aq-f-subject').value;
+  const topicSel = document.getElementById('aq-f-topic');
+  _syncTopicSelectEl(subj, topicSel, '');
+  filterAdminQuestions();
+}
+
+/** Repopulates a <select> element with topics for the given subject.
+ *  Pass subject='' to show all topics across all subjects.  */
+function _syncTopicSelectEl(subj, selectEl, selectedTopic) {
+  const cfg = getSubjectConfig();
+  let options = '<option value="">All Topics</option>';
+  if (subj && cfg[subj]) {
+    options += Object.entries(cfg[subj].topics).map(([k, v]) =>
+      `<option value="${k}" ${k === selectedTopic ? 'selected' : ''}>${v}</option>`
+    ).join('');
+  } else {
+    // Show all topics across all subjects
+    Object.entries(cfg).forEach(([sk, sv]) => {
+      options += `<optgroup label="${sv.icon} ${sv.label}">`;
+      options += Object.entries(sv.topics).map(([k, v]) =>
+        `<option value="${k}" ${k === selectedTopic ? 'selected' : ''}>${v}</option>`
+      ).join('');
+      options += '</optgroup>';
+    });
+  }
+  selectEl.innerHTML = options;
+}
+
+/** Resets to page 1 and rebuilds the question list. */
+function filterAdminQuestions() {
+  _qPage = 1;
+  _rebuildQuestionList();
+}
+
+function adminQPage(dir) {
+  _qPage += dir;
+  _rebuildQuestionList();
+}
+
+/** Core render: merges built-in + custom questions, applies filters, paginates, renders cards. */
+function _rebuildQuestionList() {
+  const container = document.getElementById('aq-list-container');
+  if (!container) return;
+
+  const fSubj   = (document.getElementById('aq-f-subject')?.value || '').trim();
+  const fGrade  = (document.getElementById('aq-f-grade')?.value   || '').trim();
+  const fTopic  = (document.getElementById('aq-f-topic')?.value   || '').trim();
+  const fSource = (document.getElementById('aq-f-source')?.value  || '').trim();
+  const fSearch = (document.getElementById('aq-search')?.value    || '').toLowerCase().trim();
+
+  const cfg = getSubjectConfig();
+
+  // ── Collect built-in English questions ──────────────────────────
+  const BUILTIN_BANKS = {
+    english: { 1: ENG_G1, 2: ENG_G2, 3: ENG_G3, 4: ENG_G4,
+               5: ENG_G5, 6: ENG_G6, 7: ENG_G7, 8: ENG_G8 }
+  };
+
+  let builtinItems = [];
+  // Only show built-in for subjects without dynamic generators
+  Object.entries(cfg).forEach(([subj, scfg]) => {
+    if (scfg.hasDynamicGenerator) return;  // math: skip built-in (procedural)
+    if (fSubj && fSubj !== subj) return;
+    const grades = fGrade ? [parseInt(fGrade)] : [1,2,3,4,5,6,7,8];
+    grades.forEach(g => {
+      const bank = (BUILTIN_BANKS[subj] || {})[g] || [];
+      bank.forEach((bq, idx) => {
+        builtinItems.push({
+          _source: 'builtin',
+          _subj: subj,
+          _grade: String(g),
+          _idx: idx,
+          subject: subj,
+          grade: String(g),
+          topic: _guessBuiltinTopic(bq),
+          question: bq.q,
+          answer: bq.a,
+          options: bq.opts,
+          context: bq.ctx || null
+        });
+      });
+    });
+  });
+
+  // ── Collect custom questions ─────────────────────────────────────
+  let customItems = getCustomQuestions().map(cq => ({ ...cq, _source: 'custom' }));
+
+  // ── Merge and filter ─────────────────────────────────────────────
+  let all = [];
+  if (fSource !== 'builtin') all = all.concat(customItems);
+  if (fSource !== 'custom')  all = all.concat(builtinItems);
+
+  if (fSubj)   all = all.filter(q => q.subject === fSubj);
+  if (fGrade)  all = all.filter(q => String(q.grade) === fGrade);
+  if (fTopic)  all = all.filter(q => q.topic === fTopic);
+  if (fSearch) all = all.filter(q =>
+    (q.question||'').toLowerCase().includes(fSearch) ||
+    (q.answer  ||'').toLowerCase().includes(fSearch) ||
+    (q.context ||'').toLowerCase().includes(fSearch)
+  );
+
+  // Custom first, then built-in; custom sorted newest first
+  customItems  = all.filter(q => q._source === 'custom').sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
+  builtinItems = all.filter(q => q._source === 'builtin');
+  all = [...customItems, ...builtinItems];
+
+  // ── Update count badge ───────────────────────────────────────────
+  const totalCustom  = getCustomQuestions().length;
+  const totalBuiltin = builtinItems.length + (fSource === 'custom' ? 0 : 0);
+  const countEl = document.getElementById('admin-q-count');
+  if (countEl) {
+    const bc = Object.values(BUILTIN_BANKS).reduce((s, grades) =>
+      s + Object.values(grades).reduce((gs, bank) => gs + bank.length, 0), 0);
+    countEl.textContent = `${bc} built-in • ${totalCustom} custom`;
+  }
+
+  if (!all.length) {
+    container.innerHTML = `<div class="admin-card"><p class="empty-state" style="padding:24px;text-align:center">
+      No questions match the selected filters.<br>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="openQuestionModal(null)">
+        <i class="fas fa-plus"></i> Add Question
+      </button>
+    </p></div>`;
+    return;
+  }
+
+  // ── Pagination ───────────────────────────────────────────────────
+  const totalPages = Math.ceil(all.length / Q_PAGE_SIZE);
+  _qPage = Math.max(1, Math.min(_qPage, totalPages));
+  const paged = all.slice((_qPage - 1) * Q_PAGE_SIZE, _qPage * Q_PAGE_SIZE);
+
+  const topicLabel = (subj, topic) => {
+    const t = (cfg[subj]||{}).topics || {};
+    return t[topic] || cap(topic) || '—';
+  };
+
+  const cards = paged.map(q => {
+    const isCustom  = q._source === 'custom';
+    const gradeStr  = `Grade ${q.grade}`;
+    const topicStr  = topicLabel(q.subject, q.topic);
+    const subjStr   = (cfg[q.subject]||{}).label || cap(q.subject);
+    const ctx       = q.context ? `<div class="admin-q-ctx">📄 ${q.context.slice(0,80)}${q.context.length>80?'…':''}</div>` : '';
+
+    if (isCustom) {
+      return `<div class="admin-q-item custom">
+        <div class="admin-q-header">
+          <span class="admin-q-badge custom">CUSTOM</span>
+          <span class="admin-q-meta">${gradeStr} · ${subjStr} · ${topicStr}</span>
+        </div>
+        ${ctx}
+        <div class="admin-q-body">${q.question}</div>
+        <div class="admin-q-answer">✓ ${q.answer}</div>
+        <div class="admin-q-actions">
+          <button class="btn btn-sm btn-outline" onclick="editAdminQuestion('${q.id}')">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button class="btn btn-sm admin-danger-btn" onclick="deleteAdminQuestion('${q.id}')">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>`;
+    } else {
+      const enc = JSON.stringify({subj:q._subj, grade:q._grade, idx:q._idx}).replace(/"/g,'&quot;');
+      return `<div class="admin-q-item builtin">
+        <div class="admin-q-header">
+          <span class="admin-q-badge builtin">BUILT-IN</span>
+          <span class="admin-q-meta">${gradeStr} · ${subjStr} · ${topicStr}</span>
+        </div>
+        ${ctx}
+        <div class="admin-q-body">${q.question}</div>
+        <div class="admin-q-answer">✓ ${q.answer}</div>
+        <div class="admin-q-actions">
+          <button class="btn btn-sm btn-outline" onclick="duplicateBuiltinQuestion('${q._subj}','${q._grade}',${q._idx})">
+            <i class="fas fa-copy"></i> Duplicate &amp; Edit
+          </button>
+        </div>
+      </div>`;
+    }
+  }).join('');
+
+  const pager = totalPages > 1 ? `
+    <div class="admin-q-pagination">
+      <button class="btn btn-sm btn-outline" onclick="adminQPage(-1)" ${_qPage <= 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Prev
+      </button>
+      <span>Page ${_qPage} of ${totalPages} &nbsp;·&nbsp; ${all.length} question${all.length!==1?'s':''}</span>
+      <button class="btn btn-sm btn-outline" onclick="adminQPage(1)" ${_qPage >= totalPages ? 'disabled' : ''}>
+        Next <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>` : `<p class="admin-q-total">${all.length} question${all.length!==1?'s':''} found</p>`;
+
+  container.innerHTML = `<div class="admin-q-list">${cards}</div>${pager}`;
+}
+
+/** Heuristic: guess the topic of a built-in question based on its text. */
+function _guessBuiltinTopic(bq) {
+  const q = (bq.q || '').toLowerCase();
+  const c = (bq.ctx || '').toLowerCase();
+  if (bq.ctx || q.includes('spelled'))         return 'spelling';
+  if (q.includes('mean?') || q.includes('synonym') || q.includes('antonym') || q.includes('opposite')) return 'vocabulary';
+  return 'grammar';
+}
+
+// ── Question Modal ──────────────────────────────
+
+let _qModalEditId = null;   // null = adding new, string = editing custom question
+
+function openQuestionModal(id) {
+  _qModalEditId = id;
+  const modal = document.getElementById('question-modal');
+  if (!modal) return;
+
+  const cfg  = getSubjectConfig();
+  const isEdit = !!id;
+
+  // Prefill values
+  let prefill = { subject:'english', grade:'3', topic:'spelling',
+                  context:'', question:'', answer:'', options:['','','',''] };
+  if (isEdit) {
+    const cq = getCustomQuestions().find(q => q.id === id);
+    if (cq) {
+      prefill = {
+        subject:  cq.subject,
+        grade:    cq.grade,
+        topic:    cq.topic,
+        context:  cq.context || '',
+        question: cq.question,
+        answer:   cq.answer,
+        options:  [...cq.options]
+      };
+    }
+  }
+
+  // Ensure 4 options
+  while (prefill.options.length < 4) prefill.options.push('');
+  const opts = prefill.options.slice(0,4);
+
+  // Build subject options
+  const subjOpts = Object.entries(cfg).map(([k,v]) =>
+    `<option value="${k}" ${k===prefill.subject?'selected':''}>${v.icon} ${v.label}</option>`
+  ).join('');
+
+  // Build topic options for prefilled subject
+  const topicHtml = Object.entries((cfg[prefill.subject]||{}).topics||{}).map(([k,v]) =>
+    `<option value="${k}" ${k===prefill.topic?'selected':''}>${v}</option>`
+  ).join('');
+
+  // Build option rows (radio marks correct answer)
+  const optRows = opts.map((o, i) => {
+    const isCorrect = (o === prefill.answer) || (i===0 && !prefill.answer);
+    return `<div class="q-option-row">
+      <input type="radio" name="q-correct" id="q-opt-radio-${i}" value="${i}" ${isCorrect?'checked':''}>
+      <input type="text" class="q-opt-input auth-input" id="q-opt-${i}" value="${o.replace(/"/g,'&quot;')}" placeholder="Option ${String.fromCharCode(65+i)}">
+    </div>`;
+  }).join('');
+
+  document.getElementById('question-modal-inner').innerHTML = `
+    <div class="q-modal-header">
+      <h3>${isEdit ? '✏️ Edit Question' : '➕ Add Question'}</h3>
+      <button class="modal-close-x" onclick="closeQuestionModal()">✕</button>
+    </div>
+    <div class="q-modal-body">
+      <div class="q-modal-row">
+        <div class="q-modal-field">
+          <label>Subject *</label>
+          <select id="qm-subject" onchange="qmSubjectChanged()">
+            ${subjOpts}
+          </select>
+        </div>
+        <div class="q-modal-field">
+          <label>Grade *</label>
+          <select id="qm-grade">
+            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}" ${String(g)===String(prefill.grade)?'selected':''}>Grade ${g}</option>`).join('')}
+          </select>
+        </div>
+        <div class="q-modal-field">
+          <label>Topic *</label>
+          <select id="qm-topic">
+            ${topicHtml}
+          </select>
+        </div>
+      </div>
+      <div class="q-modal-field">
+        <label>Context <span class="q-optional">(optional — passage shown above question)</span></label>
+        <input type="text" id="qm-context" class="auth-input" placeholder='e.g. "My ___ is coming to visit."' value="${prefill.context.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="q-modal-field">
+        <label>Question *</label>
+        <input type="text" id="qm-question" class="auth-input" placeholder='e.g. "Which word is spelled correctly?"' value="${prefill.question.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="q-modal-field">
+        <label>Options &amp; Answer <span class="q-optional">(● = correct answer)</span></label>
+        <div id="qm-options">${optRows}</div>
+      </div>
+      <div id="qm-error" class="q-modal-error" style="display:none"></div>
+    </div>
+    <div class="q-modal-actions">
+      <button class="btn btn-ghost" onclick="closeQuestionModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestionFromModal()">
+        <i class="fas fa-save"></i> Save Question
+      </button>
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function closeQuestionModal() {
+  const modal = document.getElementById('question-modal');
+  if (modal) modal.style.display = 'none';
+  _qModalEditId = null;
+}
+
+/** When subject changes inside the modal, repopulate the topic dropdown. */
+function qmSubjectChanged() {
+  const subj = document.getElementById('qm-subject').value;
+  const topicSel = document.getElementById('qm-topic');
+  if (!topicSel) return;
+  const cfg = getSubjectConfig();
+  topicSel.innerHTML = Object.entries((cfg[subj]||{}).topics||{}).map(([k,v]) =>
+    `<option value="${k}">${v}</option>`
+  ).join('');
+}
+
+function saveQuestionFromModal() {
+  const errEl = document.getElementById('qm-error');
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+  errEl.style.display = 'none';
+
+  const subject  = document.getElementById('qm-subject').value.trim();
+  const grade    = document.getElementById('qm-grade').value.trim();
+  const topic    = document.getElementById('qm-topic').value.trim();
+  const context  = document.getElementById('qm-context').value.trim();
+  const question = document.getElementById('qm-question').value.trim();
+
+  const options  = [0,1,2,3].map(i => (document.getElementById('q-opt-'+i)?.value||'').trim());
+  const correctRadio = document.querySelector('input[name="q-correct"]:checked');
+  const correctIdx   = correctRadio ? parseInt(correctRadio.value) : -1;
+  const answer       = correctIdx >= 0 ? options[correctIdx] : '';
+
+  // Validate
+  if (!question) return showErr('Question text is required.');
+  if (options.some(o => !o)) return showErr('All four options must be filled in.');
+  if (new Set(options).size < 4) return showErr('All four options must be different.');
+  if (correctIdx < 0)  return showErr('Please select the correct answer (click the radio button next to it).');
+  if (!answer)         return showErr('The correct answer option cannot be blank.');
+
+  const all = getCustomQuestions();
+  const now = Date.now();
+
+  if (_qModalEditId) {
+    // Update existing
+    const idx = all.findIndex(q => q.id === _qModalEditId);
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], subject, grade, topic, context: context || null,
+                   question, answer, options, updatedAt: now };
+    }
+    showToast('Question updated!');
+  } else {
+    // Add new
+    const id = 'cq_' + now + '_' + Math.random().toString(36).slice(2,7);
+    all.push({ id, subject, grade, topic, context: context || null,
+               question, answer, options, createdAt: now });
+    showToast('Question added!');
+  }
+
+  saveCustomQuestions(all);
+  closeQuestionModal();
+  _qPage = 1;
+  _rebuildQuestionList();
+}
+
+function editAdminQuestion(id) {
+  openQuestionModal(id);
+}
+
+function deleteAdminQuestion(id) {
+  const all = getCustomQuestions();
+  const q   = all.find(cq => cq.id === id);
+  if (!q) return;
+  showModal('🗑️', 'Delete Question?',
+    `Delete: "${q.question.slice(0, 80)}${q.question.length > 80 ? '…' : ''}"? This cannot be undone.`,
+    () => {
+      saveCustomQuestions(getCustomQuestions().filter(cq => cq.id !== id));
+      showToast('Question deleted.');
+      _rebuildQuestionList();
+    });
+}
+
+function duplicateBuiltinQuestion(subj, grade, qIdx) {
+  const BUILTIN_BANKS = {
+    english: { 1: ENG_G1, 2: ENG_G2, 3: ENG_G3, 4: ENG_G4,
+               5: ENG_G5, 6: ENG_G6, 7: ENG_G7, 8: ENG_G8 }
+  };
+  const bank = (BUILTIN_BANKS[subj] || {})[parseInt(grade)] || [];
+  const bq   = bank[qIdx];
+  if (!bq) return;
+
+  // Save a copy as a custom question, then open it in the edit modal
+  const now = Date.now();
+  const id  = 'cq_' + now + '_' + Math.random().toString(36).slice(2,7);
+  const copy = {
+    id,
+    subject:   subj,
+    grade:     String(grade),
+    topic:     _guessBuiltinTopic(bq),
+    context:   bq.ctx || null,
+    question:  bq.q,
+    answer:    bq.a,
+    options:   [...bq.opts],
+    createdAt: now
+  };
+  const all = getCustomQuestions();
+  all.push(copy);
+  saveCustomQuestions(all);
+
+  openQuestionModal(id);  // open edit modal prefilled with the copy
 }
 
 // ─── BOOT ──────────────────────────────────────

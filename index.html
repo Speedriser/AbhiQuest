@@ -928,6 +928,9 @@
             <button class="admin-nav-btn" id="anav-activity" onclick="switchAdminTab('activity')">
               <i class="fas fa-history"></i> Activity
             </button>
+            <button class="admin-nav-btn" id="anav-questions" onclick="switchAdminTab('questions')">
+              <i class="fas fa-question-circle"></i> Questions
+            </button>
             <button class="admin-nav-btn" id="anav-settings" onclick="switchAdminTab('settings')">
               <i class="fas fa-cog"></i> Settings
             </button>
@@ -999,6 +1002,14 @@
             </div>
           </div>
 
+          <!-- QUESTIONS TAB (content rendered by renderAdminQuestions() in app.js) -->
+          <div id="admin-tab-questions" class="admin-tab">
+            <div class="admin-page-header">
+              <h1>&#10067; Question Manager</h1>
+              <span class="admin-badge">Loading…</span>
+            </div>
+          </div>
+
           <!-- SETTINGS TAB -->
           <div id="admin-tab-settings" class="admin-tab">
             <div class="admin-page-header">
@@ -1066,6 +1077,15 @@
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeAdminLogin()">Cancel</button>
         <button class="btn btn-primary" onclick="handleAdminLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Question Add/Edit Modal -->
+  <div id="question-modal" class="modal-overlay" style="display:none" onclick="closeQuestionModal()">
+    <div class="q-modal" onclick="event.stopPropagation()">
+      <div id="question-modal-inner">
+        <!-- Content injected by openQuestionModal() -->
       </div>
     </div>
   </div>
