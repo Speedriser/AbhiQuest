@@ -1,5 +1,5 @@
 /* =============================================
-   AbhiQuest - Question Banks & Generators
+   RADT Quest - Question Banks & Generators
    ============================================= */
 
 // ─── HELPERS ───────────────────────────────────

@@ -3,529 +3,793 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AbhiQuest - Learn & Play!</title>
+  <title>RADT Quest – Learn · Play · Win!</title>
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div id="app">
 
-    <!-- ===== LANDING SCREEN ===== -->
-    <div id="screen-landing" class="screen active">
-      <div class="landing-bg"></div>
-      <div class="landing-container">
-        <div class="logo-section">
-          <div class="logo-icon">🧠</div>
-          <h1 class="logo-text">Abhi<span class="logo-accent">Quest</span></h1>
-          <p class="logo-tagline">Learn · Play · Win! 🏆</p>
+  <!-- ========================================================
+       TOP SITE HEADER  (visible once logged in)
+  ======================================================== -->
+  <header id="site-header" class="site-header hidden">
+    <div class="header-inner">
+      <a class="site-logo" href="#" onclick="showScreen('home');return false;">
+        <span class="logo-brain">&#129504;</span>
+        <span class="logo-name">RADT<span class="logo-accent">Quest</span></span>
+      </a>
+      <nav class="site-nav" id="site-nav">
+        <a class="nav-link" onclick="showScreen('home')"><i class="fas fa-home"></i> Home</a>
+        <a class="nav-link" onclick="showScreen('quiz-setup')"><i class="fas fa-brain"></i> Quiz</a>
+        <a class="nav-link" onclick="showScreen('leaderboard')"><i class="fas fa-trophy"></i> Leaderboard</a>
+        <a class="nav-link" onclick="showScreen('shop')"><i class="fas fa-store"></i> Shop</a>
+      </nav>
+      <div class="header-right">
+        <div class="hdr-coins" onclick="showScreen('shop')">
+          <span>&#129689;</span><span id="hdr-coins">0</span>
         </div>
-        <div class="landing-features">
-          <div class="feature-chip">🧮 Maths</div>
-          <div class="feature-chip">📖 English</div>
-          <div class="feature-chip">🏆 Compete</div>
-          <div class="feature-chip">🎁 Rewards</div>
+        <div class="hdr-user" onclick="showScreen('profile')">
+          <span id="hdr-avatar">&#128054;</span>
+          <span id="hdr-username">Player</span>
+          <i class="fas fa-chevron-down" style="font-size:11px;opacity:.6"></i>
         </div>
-        <div class="landing-actions">
-          <button class="btn btn-primary btn-large" onclick="showAuth('login')">
-            <i class="fas fa-sign-in-alt"></i> Log In
-          </button>
-          <button class="btn btn-secondary btn-large" onclick="showAuth('register')">
-            <i class="fas fa-user-plus"></i> Sign Up
-          </button>
-          <button class="btn btn-ghost btn-large" onclick="playAsGuest()">
-            <i class="fas fa-gamepad"></i> Play as Guest
-          </button>
-        </div>
+        <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+          <i class="fas fa-bars"></i>
+        </button>
       </div>
     </div>
+  </header>
+
+  <!-- ========================================================
+       MAIN APP WRAPPER
+  ======================================================== -->
+  <div id="app">
+
+    <!-- ===== LANDING PAGE ===== -->
+    <div id="screen-landing" class="screen active">
+      <div class="landing-hero">
+        <div class="hero-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+        <nav class="landing-nav">
+          <div class="landing-logo">
+            <span>&#129504;</span>
+            <span class="logo-name">RADT<span class="logo-accent">Quest</span></span>
+          </div>
+          <div class="landing-nav-actions">
+            <button class="btn btn-ghost-white" onclick="showAuth('login')">Log In</button>
+            <button class="btn btn-white" onclick="showAuth('register')">Sign Up Free</button>
+          </div>
+        </nav>
+        <div class="hero-content">
+          <div class="hero-badge">&#127942; #1 Learning Platform for Kids</div>
+          <h1 class="hero-title">
+            Learn, Play &amp;<br>
+            <span class="hero-highlight">Win Big!</span>
+          </h1>
+          <p class="hero-subtitle">
+            Master Maths &amp; English through fun quizzes, earn coins,
+            unlock avatars and compete with friends &mdash; all in one place!
+          </p>
+          <div class="hero-cta">
+            <button class="btn btn-hero-primary" onclick="showAuth('register')">
+              <i class="fas fa-rocket"></i> Start for Free
+            </button>
+            <button class="btn btn-hero-ghost" onclick="playAsGuest()">
+              <i class="fas fa-gamepad"></i> Try as Guest
+            </button>
+          </div>
+          <div class="hero-social-proof">
+            <div class="proof-avatars">&#128054;&#129418;&#128060;&#129302;&#129409;</div>
+            <p>Join <strong>thousands of kids</strong> already on their quest!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="features-strip">
+        <div class="feature-item">
+          <span class="fi-icon">&#129518;</span>
+          <h4>Maths Quizzes</h4>
+          <p>Addition, Subtraction, Multiplication, Division &amp; more</p>
+        </div>
+        <div class="feature-item">
+          <span class="fi-icon">&#128218;</span>
+          <h4>English Quizzes</h4>
+          <p>Spelling, Vocabulary, Grammar &amp; Reading challenges</p>
+        </div>
+        <div class="feature-item">
+          <span class="fi-icon">&#127942;</span>
+          <h4>Compete &amp; Win</h4>
+          <p>Real-time leaderboard &amp; friend challenges</p>
+        </div>
+        <div class="feature-item">
+          <span class="fi-icon">&#128717;</span>
+          <h4>Rewards Shop</h4>
+          <p>Spend coins on avatars, themes &amp; power-ups</p>
+        </div>
+      </div>
+
+      <section class="how-section">
+        <div class="section-inner">
+          <h2 class="section-title">How RADT Quest Works</h2>
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-num">1</div>
+              <div class="step-icon">&#128273;</div>
+              <h3>Create Account</h3>
+              <p>Sign up for free and pick your avatar to get started on your learning journey.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-num">2</div>
+              <div class="step-icon">&#128221;</div>
+              <h3>Take a Quiz</h3>
+              <p>Choose Maths or English, set your difficulty, and answer 20 random questions.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-num">3</div>
+              <div class="step-icon">&#11088;</div>
+              <h3>Earn Points &amp; Coins</h3>
+              <p>Score big to earn more coins. Streak bonuses give you even more rewards!</p>
+            </div>
+            <div class="step-card">
+              <div class="step-num">4</div>
+              <div class="step-icon">&#127942;</div>
+              <h3>Beat the Leaderboard</h3>
+              <p>Challenge friends with a code and climb to the top of the weekly rankings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="landing-footer">
+        <div class="footer-inner">
+          <div class="footer-logo">&#129504; RADT<span class="logo-accent">Quest</span></div>
+          <p>A fun learning adventure for kids everywhere.</p>
+          <div class="footer-actions">
+            <button class="btn btn-primary" onclick="showAuth('register')">Get Started Free</button>
+            <button class="btn btn-ghost" onclick="playAsGuest()">Play as Guest</button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
 
     <!-- ===== AUTH SCREEN ===== -->
     <div id="screen-auth" class="screen">
-      <div class="auth-wrapper">
-        <button class="btn btn-ghost btn-back" onclick="showScreen('landing')">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
-
-        <!-- Login Form -->
-        <div id="auth-login">
-          <div class="auth-header">
-            <div class="auth-icon">👋</div>
-            <h2>Welcome Back!</h2>
-            <p>Log in to continue your quest</p>
+      <div class="auth-page">
+        <div class="auth-illustration">
+          <div class="auth-ill-inner">
+            <div class="auth-ill-icon">&#129504;</div>
+            <h2>RADT<span class="logo-accent">Quest</span></h2>
+            <p>Your learning adventure awaits!</p>
+            <div class="auth-features-list">
+              <div class="afl-item"><i class="fas fa-check-circle"></i> 20-question random quizzes</div>
+              <div class="afl-item"><i class="fas fa-check-circle"></i> Earn coins &amp; unlock avatars</div>
+              <div class="afl-item"><i class="fas fa-check-circle"></i> Compete with friends</div>
+              <div class="afl-item"><i class="fas fa-check-circle"></i> Maths &amp; English subjects</div>
+            </div>
           </div>
-          <form onsubmit="handleLogin(event)">
-            <div class="form-group">
-              <label><i class="fas fa-envelope"></i> Email</label>
-              <input type="email" id="login-email" placeholder="your@email.com" required>
-            </div>
-            <div class="form-group">
-              <label><i class="fas fa-lock"></i> Password</label>
-              <input type="password" id="login-password" placeholder="Your password" required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">
-              <i class="fas fa-sign-in-alt"></i> Log In
-            </button>
-          </form>
-          <p class="auth-switch">No account? <a href="#" onclick="toggleAuthMode('register')">Sign Up Free</a></p>
         </div>
-
-        <!-- Register Form -->
-        <div id="auth-register" style="display:none">
-          <div class="auth-header">
-            <div class="auth-icon">🚀</div>
-            <h2>Join the Quest!</h2>
-            <p>Create your account to start winning</p>
+        <div class="auth-form-panel">
+          <button class="btn btn-ghost btn-back" onclick="showScreen('landing')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <div id="auth-login">
+            <div class="auth-header">
+              <div class="auth-icon">&#128075;</div>
+              <h2>Welcome Back!</h2>
+              <p>Log in to continue your quest</p>
+            </div>
+            <form onsubmit="handleLogin(event)">
+              <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email or Username</label>
+                <input type="text" id="login-email" placeholder="your@email.com" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="login-password" placeholder="Your password" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i> Log In
+              </button>
+            </form>
+            <p class="auth-switch">No account? <a href="#" onclick="toggleAuthMode('register')">Sign Up Free</a></p>
           </div>
-          <form onsubmit="handleRegister(event)">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Your Name</label>
-              <input type="text" id="register-name" placeholder="Your cool name" required>
+          <div id="auth-register" style="display:none">
+            <div class="auth-header">
+              <div class="auth-icon">&#128640;</div>
+              <h2>Join the Quest!</h2>
+              <p>Create your free account to start winning</p>
             </div>
-            <div class="form-group">
-              <label><i class="fas fa-envelope"></i> Email</label>
-              <input type="email" id="register-email" placeholder="your@email.com" required>
-            </div>
-            <div class="form-group">
-              <label><i class="fas fa-lock"></i> Password</label>
-              <input type="password" id="register-password" placeholder="Min 6 characters" required minlength="6">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">
-              <i class="fas fa-rocket"></i> Start Learning!
-            </button>
-          </form>
-          <p class="auth-switch">Have an account? <a href="#" onclick="toggleAuthMode('login')">Log In</a></p>
+            <form onsubmit="handleRegister(event)">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Display Name</label>
+                <input type="text" id="register-name" placeholder="Your cool nickname" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="register-email" placeholder="your@email.com" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="register-password" placeholder="Min 6 characters" required minlength="6">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-rocket"></i> Create Account &amp; Play!
+              </button>
+            </form>
+            <p class="auth-switch">Have an account? <a href="#" onclick="toggleAuthMode('login')">Log In</a></p>
+          </div>
+          <div id="auth-error" class="auth-error" style="display:none"></div>
         </div>
-
-        <div id="auth-error" class="auth-error" style="display:none"></div>
       </div>
     </div>
 
-    <!-- ===== HOME SCREEN ===== -->
+
+    <!-- ===== HOME / DASHBOARD ===== -->
     <div id="screen-home" class="screen">
-      <div class="navbar">
-        <div class="nav-user" onclick="showScreen('profile')" style="cursor:pointer">
-          <span id="home-avatar" class="nav-avatar">🐶</span>
-          <div>
-            <span id="home-username" class="nav-username">Player</span>
-            <div class="nav-streak" id="nav-streak-display"><span>🔥</span><span id="nav-streak">0</span></div>
-          </div>
-        </div>
-        <div class="nav-coins" onclick="showScreen('shop')" style="cursor:pointer">
-          <span class="coin-icon">🪙</span>
-          <span id="home-coins">0</span>
-        </div>
-      </div>
-
-      <div class="home-content">
-        <div class="home-greeting">
-          <h2 id="home-greeting-text">Ready to learn? 🎯</h2>
-          <p>Choose a subject to start!</p>
-        </div>
-
-        <div class="subject-cards">
-          <div class="subject-card math-card" onclick="showQuizSetup('math')">
-            <div class="subject-card-bg"></div>
-            <div class="subject-icon">🧮</div>
-            <h3>Mathematics</h3>
-            <p>Addition, Subtraction, Times Tables & more!</p>
-            <div class="subject-progress-wrap">
-              <div class="progress-bar">
-                <div class="progress-fill" id="math-progress-bar" style="width:0%"></div>
+      <div class="page-container">
+        <div class="dashboard-layout">
+          <main class="dash-main">
+            <div class="dash-greeting-bar">
+              <div>
+                <h2 id="home-greeting-text">Ready to learn? &#127919;</h2>
+                <p class="greeting-sub">Pick a subject and start your quiz!</p>
               </div>
-              <span id="math-progress-text">0 quizzes</span>
-            </div>
-            <div class="subject-arrow"><i class="fas fa-chevron-right"></i></div>
-          </div>
-
-          <div class="subject-card english-card" onclick="showQuizSetup('english')">
-            <div class="subject-card-bg"></div>
-            <div class="subject-icon">📖</div>
-            <h3>English</h3>
-            <p>Spelling, Vocabulary & Grammar!</p>
-            <div class="subject-progress-wrap">
-              <div class="progress-bar">
-                <div class="progress-fill english-fill" id="english-progress-bar" style="width:0%"></div>
+              <div class="streak-pill" id="dash-streak-pill">
+                &#128293; <span id="dash-streak">0</span> day streak
               </div>
-              <span id="english-progress-text">0 quizzes</span>
             </div>
-            <div class="subject-arrow"><i class="fas fa-chevron-right"></i></div>
-          </div>
-        </div>
 
-        <div class="quick-stats">
-          <div class="stat-card">
-            <span class="stat-icon">⭐</span>
-            <span class="stat-value" id="stat-total-points">0</span>
-            <span class="stat-label">Points</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-icon">📝</span>
-            <span class="stat-value" id="stat-quizzes">0</span>
-            <span class="stat-label">Quizzes</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-icon">🏆</span>
-            <span class="stat-value" id="stat-best">0%</span>
-            <span class="stat-label">Best Score</span>
-          </div>
-        </div>
+            <div class="subject-cards-grid">
+              <div class="subject-card math-card" onclick="showQuizSetup('math')">
+                <div class="sc-left">
+                  <div class="sc-icon">&#129518;</div>
+                  <div class="sc-text">
+                    <h3>Mathematics</h3>
+                    <p>Addition &middot; Subtraction &middot; Times Tables &middot; Division</p>
+                    <div class="sc-tags">
+                      <span class="sc-tag">Easy</span>
+                      <span class="sc-tag">Medium</span>
+                      <span class="sc-tag">Hard</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="sc-right">
+                  <div class="sc-prog-wrap">
+                    <div class="sc-progress-bar">
+                      <div class="sc-progress-fill math-fill" id="math-progress-bar" style="width:0%"></div>
+                    </div>
+                    <span id="math-progress-text" class="sc-prog-text">0 quizzes</span>
+                  </div>
+                  <button class="btn btn-primary sc-btn">Start <i class="fas fa-arrow-right"></i></button>
+                </div>
+              </div>
 
-        <div class="home-nav">
-          <button class="home-nav-btn" onclick="showScreen('shop')">
-            <span class="home-nav-icon">🛍️</span>
-            <span>Shop</span>
-          </button>
-          <button class="home-nav-btn" onclick="showScreen('leaderboard')">
-            <span class="home-nav-icon">🏆</span>
-            <span>Leaders</span>
-          </button>
-          <button class="home-nav-btn" onclick="showScreen('profile')">
-            <span class="home-nav-icon">👤</span>
-            <span>Profile</span>
-          </button>
+              <div class="subject-card english-card" onclick="showQuizSetup('english')">
+                <div class="sc-left">
+                  <div class="sc-icon">&#128218;</div>
+                  <div class="sc-text">
+                    <h3>English</h3>
+                    <p>Spelling &middot; Vocabulary &middot; Grammar &middot; Reading</p>
+                    <div class="sc-tags">
+                      <span class="sc-tag en-tag">Easy</span>
+                      <span class="sc-tag en-tag">Medium</span>
+                      <span class="sc-tag en-tag">Hard</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="sc-right">
+                  <div class="sc-prog-wrap">
+                    <div class="sc-progress-bar">
+                      <div class="sc-progress-fill english-fill" id="english-progress-bar" style="width:0%"></div>
+                    </div>
+                    <span id="english-progress-text" class="sc-prog-text">0 quizzes</span>
+                  </div>
+                  <button class="btn btn-english sc-btn">Start <i class="fas fa-arrow-right"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="dash-bottom-row">
+              <div class="dash-card">
+                <h3 class="dash-card-title"><i class="fas fa-history"></i> Recent Quizzes</h3>
+                <div id="recent-quizzes-list" class="recent-list">
+                  <p class="empty-state">No quizzes yet &ndash; start one above! &#128640;</p>
+                </div>
+              </div>
+              <div class="dash-card">
+                <h3 class="dash-card-title"><i class="fas fa-trophy"></i> Top Players <a class="see-all" onclick="showScreen('leaderboard')">See All &rarr;</a></h3>
+                <div id="mini-leaderboard" class="mini-lb"></div>
+              </div>
+            </div>
+          </main>
+
+          <aside class="dash-sidebar">
+            <div class="sidebar-user-card" onclick="showScreen('profile')">
+              <div class="suc-avatar" id="sidebar-avatar">&#128054;</div>
+              <div class="suc-info">
+                <div class="suc-name" id="sidebar-username">Player</div>
+                <div class="suc-rank" id="sidebar-rank">&#127891; Beginner</div>
+              </div>
+            </div>
+            <div class="sidebar-stats">
+              <div class="sb-stat">
+                <span class="sb-stat-icon">&#11088;</span>
+                <div>
+                  <div class="sb-stat-val" id="sb-points">0</div>
+                  <div class="sb-stat-lbl">Total Points</div>
+                </div>
+              </div>
+              <div class="sb-stat">
+                <span class="sb-stat-icon">&#129689;</span>
+                <div>
+                  <div class="sb-stat-val" id="sb-coins">0</div>
+                  <div class="sb-stat-lbl">Coins</div>
+                </div>
+              </div>
+              <div class="sb-stat">
+                <span class="sb-stat-icon">&#128221;</span>
+                <div>
+                  <div class="sb-stat-val" id="sb-quizzes">0</div>
+                  <div class="sb-stat-lbl">Quizzes Done</div>
+                </div>
+              </div>
+              <div class="sb-stat">
+                <span class="sb-stat-icon">&#127942;</span>
+                <div>
+                  <div class="sb-stat-val" id="sb-best">0%</div>
+                  <div class="sb-stat-lbl">Best Score</div>
+                </div>
+              </div>
+            </div>
+            <div class="sidebar-challenge">
+              <h4><i class="fas fa-bolt"></i> Quick Challenge</h4>
+              <p>Generate a code and challenge a friend!</p>
+              <div class="challenge-code-display" id="challenge-code-sidebar">&mdash; &mdash; &mdash; &mdash;</div>
+              <button class="btn btn-primary btn-block" onclick="generateChallengeCode()" style="margin-top:8px">
+                <i class="fas fa-dice"></i> Generate Code
+              </button>
+              <div class="join-challenge-row" style="margin-top:8px">
+                <input type="text" id="join-code-sidebar" placeholder="Enter friend's code" maxlength="6">
+                <button class="btn btn-secondary" onclick="joinChallengeFromSidebar()">Join</button>
+              </div>
+            </div>
+            <div class="sidebar-shop-promo" onclick="showScreen('shop')">
+              <span class="ssp-icon">&#128717;</span>
+              <div>
+                <strong>Visit the Shop</strong>
+                <p>Spend coins on avatars &amp; themes</p>
+              </div>
+              <i class="fas fa-chevron-right"></i>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
+
 
     <!-- ===== QUIZ SETUP SCREEN ===== -->
     <div id="screen-quiz-setup" class="screen">
-      <div class="navbar">
-        <button class="btn btn-ghost btn-icon" onclick="showScreen('home')">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2 id="setup-title">Choose Quiz</h2>
-        <div></div>
-      </div>
+      <div class="page-container">
+        <div class="setup-page">
+          <div class="setup-header">
+            <button class="btn btn-ghost btn-back-inline" onclick="showScreen('home')">
+              <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <div>
+              <h1 id="setup-title">Choose Your Quiz</h1>
+              <p>Select a subject, topic and difficulty to get started</p>
+            </div>
+          </div>
 
-      <div class="setup-content">
-        <!-- Math Topics -->
-        <div id="math-setup">
-          <h3 class="setup-section-title">📐 Choose Topic</h3>
-          <div class="option-grid">
-            <div class="option-card" data-topic="addition" onclick="selectTopic('addition',this)">
-              <span class="option-icon">➕</span>
-              <span class="option-label">Addition</span>
+          <div class="setup-grid">
+            <div class="setup-section">
+              <h3><span class="setup-step">1</span> Choose Subject</h3>
+              <div class="subject-selector">
+                <div class="ss-card active" id="ss-math" onclick="selectSubject('math')">
+                  <span class="ss-icon">&#129518;</span>
+                  <span>Mathematics</span>
+                </div>
+                <div class="ss-card" id="ss-english" onclick="selectSubject('english')">
+                  <span class="ss-icon">&#128218;</span>
+                  <span>English</span>
+                </div>
+              </div>
             </div>
-            <div class="option-card" data-topic="subtraction" onclick="selectTopic('subtraction',this)">
-              <span class="option-icon">➖</span>
-              <span class="option-label">Subtraction</span>
+
+            <div class="setup-section">
+              <h3><span class="setup-step">2</span> Choose Topic</h3>
+              <div id="math-setup">
+                <div class="option-grid">
+                  <div class="option-card" data-topic="addition" onclick="selectTopic('addition',this)">
+                    <span class="option-icon">&#10133;</span>
+                    <span class="option-label">Addition</span>
+                  </div>
+                  <div class="option-card" data-topic="subtraction" onclick="selectTopic('subtraction',this)">
+                    <span class="option-icon">&#10134;</span>
+                    <span class="option-label">Subtraction</span>
+                  </div>
+                  <div class="option-card" data-topic="multiplication" onclick="selectTopic('multiplication',this)">
+                    <span class="option-icon">&#10006;</span>
+                    <span class="option-label">Times Tables</span>
+                  </div>
+                  <div class="option-card" data-topic="division" onclick="selectTopic('division',this)">
+                    <span class="option-icon">&#10135;</span>
+                    <span class="option-label">Division</span>
+                  </div>
+                  <div class="option-card" data-topic="mixed-math" onclick="selectTopic('mixed-math',this)">
+                    <span class="option-icon">&#128256;</span>
+                    <span class="option-label">Mixed</span>
+                  </div>
+                </div>
+              </div>
+              <div id="english-setup" style="display:none">
+                <div class="option-grid">
+                  <div class="option-card" data-topic="spelling" onclick="selectTopic('spelling',this)">
+                    <span class="option-icon">&#9999;</span>
+                    <span class="option-label">Spelling</span>
+                  </div>
+                  <div class="option-card" data-topic="vocabulary" onclick="selectTopic('vocabulary',this)">
+                    <span class="option-icon">&#128218;</span>
+                    <span class="option-label">Vocabulary</span>
+                  </div>
+                  <div class="option-card" data-topic="grammar" onclick="selectTopic('grammar',this)">
+                    <span class="option-icon">&#128394;</span>
+                    <span class="option-label">Grammar</span>
+                  </div>
+                  <div class="option-card" data-topic="mixed-english" onclick="selectTopic('mixed-english',this)">
+                    <span class="option-icon">&#128256;</span>
+                    <span class="option-label">Mixed</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="option-card" data-topic="multiplication" onclick="selectTopic('multiplication',this)">
-              <span class="option-icon">✖️</span>
-              <span class="option-label">Times Tables</span>
+
+            <div class="setup-section">
+              <h3><span class="setup-step">3</span> Choose Difficulty</h3>
+              <div class="difficulty-grid">
+                <div class="difficulty-card easy-diff" data-diff="easy" onclick="selectDifficulty('easy',this)">
+                  <span class="diff-emoji">&#128522;</span>
+                  <div>
+                    <span class="diff-label">Easy</span>
+                    <span class="diff-desc">Great to start!</span>
+                  </div>
+                </div>
+                <div class="difficulty-card medium-diff" data-diff="medium" onclick="selectDifficulty('medium',this)">
+                  <span class="diff-emoji">&#129300;</span>
+                  <div>
+                    <span class="diff-label">Medium</span>
+                    <span class="diff-desc">Challenge yourself</span>
+                  </div>
+                </div>
+                <div class="difficulty-card hard-diff" data-diff="hard" onclick="selectDifficulty('hard',this)">
+                  <span class="diff-emoji">&#129327;</span>
+                  <div>
+                    <span class="diff-label">Hard</span>
+                    <span class="diff-desc">Master level!</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="option-card" data-topic="division" onclick="selectTopic('division',this)">
-              <span class="option-icon">➗</span>
-              <span class="option-label">Division</span>
-            </div>
-            <div class="option-card" data-topic="mixed-math" onclick="selectTopic('mixed-math',this)">
-              <span class="option-icon">🔀</span>
-              <span class="option-label">Mixed</span>
+
+            <div class="setup-section setup-summary">
+              <div class="quiz-info-chips">
+                <span class="info-chip"><i class="fas fa-list-ol"></i> 20 Questions</span>
+                <span class="info-chip"><i class="fas fa-clock"></i> ~10 mins</span>
+                <span class="info-chip"><i class="fas fa-coins"></i> Up to 250 Coins</span>
+                <span class="info-chip"><i class="fas fa-star"></i> Points &amp; Grades</span>
+              </div>
+              <button class="btn btn-primary btn-start btn-xl" id="start-quiz-btn" onclick="startQuiz()" disabled>
+                <i class="fas fa-play-circle"></i> Launch Quiz!
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- English Topics -->
-        <div id="english-setup" style="display:none">
-          <h3 class="setup-section-title">📝 Choose Topic</h3>
-          <div class="option-grid">
-            <div class="option-card" data-topic="spelling" onclick="selectTopic('spelling',this)">
-              <span class="option-icon">✏️</span>
-              <span class="option-label">Spelling</span>
-            </div>
-            <div class="option-card" data-topic="vocabulary" onclick="selectTopic('vocabulary',this)">
-              <span class="option-icon">📚</span>
-              <span class="option-label">Vocabulary</span>
-            </div>
-            <div class="option-card" data-topic="grammar" onclick="selectTopic('grammar',this)">
-              <span class="option-icon">🖊️</span>
-              <span class="option-label">Grammar</span>
-            </div>
-            <div class="option-card" data-topic="mixed-english" onclick="selectTopic('mixed-english',this)">
-              <span class="option-icon">🔀</span>
-              <span class="option-label">Mixed</span>
-            </div>
-          </div>
-        </div>
-
-        <h3 class="setup-section-title">⚡ Choose Difficulty</h3>
-        <div class="difficulty-grid">
-          <div class="difficulty-card easy-diff" data-diff="easy" onclick="selectDifficulty('easy',this)">
-            <span class="diff-emoji">😊</span>
-            <span class="diff-label">Easy</span>
-            <span class="diff-desc">Great to start!</span>
-          </div>
-          <div class="difficulty-card medium-diff" data-diff="medium" onclick="selectDifficulty('medium',this)">
-            <span class="diff-emoji">🤔</span>
-            <span class="diff-label">Medium</span>
-            <span class="diff-desc">Challenge yourself</span>
-          </div>
-          <div class="difficulty-card hard-diff" data-diff="hard" onclick="selectDifficulty('hard',this)">
-            <span class="diff-emoji">🤯</span>
-            <span class="diff-label">Hard</span>
-            <span class="diff-desc">Master level!</span>
-          </div>
-        </div>
-
-        <div class="setup-info">
-          <span>📝 20 Questions</span>
-          <span>🪙 Up to 250 Coins</span>
-          <span>⭐ Earn Points</span>
-        </div>
-
-        <button class="btn btn-primary btn-block btn-start" id="start-quiz-btn" onclick="startQuiz()" disabled>
-          <i class="fas fa-play"></i> Start Quiz!
-        </button>
       </div>
     </div>
+
 
     <!-- ===== QUIZ SCREEN ===== -->
     <div id="screen-quiz" class="screen">
-      <div class="quiz-header">
-        <button class="btn btn-ghost btn-icon quit-btn" onclick="quitQuiz()">
-          <i class="fas fa-times"></i>
-        </button>
-        <div class="quiz-progress-wrap">
-          <div class="progress-bar quiz-progress-bar">
-            <div class="progress-fill" id="quiz-progress-fill" style="width:0%"></div>
-          </div>
-          <span id="quiz-q-count" class="quiz-q-count">1 / 20</span>
-        </div>
-        <div class="quiz-coins-display">
-          <span>🪙</span><span id="quiz-coins">0</span>
-        </div>
-      </div>
-
-      <div class="quiz-body">
-        <div class="streak-badge" id="streak-badge" style="display:none">
-          🔥 <span id="quiz-streak">3</span> in a row!
-        </div>
-
-        <div class="question-card" id="question-card">
-          <div class="question-meta">
-            <span id="question-subject-tag" class="subject-tag">Maths</span>
-            <span id="question-number" class="q-number">Q1</span>
-          </div>
-          <p id="question-context" class="question-context" style="display:none"></p>
-          <div id="question-text" class="question-text">Loading...</div>
-        </div>
-
-        <div class="answer-grid" id="answer-grid">
-          <!-- Options injected by JS -->
-        </div>
-
-        <div class="feedback-panel" id="feedback-panel" style="display:none">
-          <div class="feedback-content">
-            <div id="feedback-icon" class="feedback-icon"></div>
-            <div id="feedback-message" class="feedback-message"></div>
-          </div>
-          <button class="btn btn-primary btn-next" onclick="nextQuestion()">
-            Continue <i class="fas fa-arrow-right"></i>
+      <div class="quiz-page-wrap">
+        <div class="quiz-topbar">
+          <button class="btn btn-ghost btn-icon quit-btn" onclick="quitQuiz()">
+            <i class="fas fa-times"></i> Quit
           </button>
+          <div class="quiz-progress-section">
+            <div class="progress-bar quiz-progress-bar">
+              <div class="progress-fill" id="quiz-progress-fill" style="width:0%"></div>
+            </div>
+            <span id="quiz-q-count" class="quiz-q-count">1 / 20</span>
+          </div>
+          <div class="quiz-live-stats">
+            <span class="quiz-stat-pill"><i class="fas fa-coins"></i> <span id="quiz-coins">0</span></span>
+            <span class="quiz-stat-pill timer-pill">&#9201; <span id="timer-num">30</span>s</span>
+          </div>
         </div>
-      </div>
 
-      <div class="timer-container">
-        <div class="timer-bar" id="timer-bar">
-          <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+        <div class="quiz-body">
+          <div class="streak-badge" id="streak-badge" style="display:none">
+            &#128293; <span id="quiz-streak">3</span> in a row!
+          </div>
+          <div class="question-card" id="question-card">
+            <div class="question-meta">
+              <span id="question-subject-tag" class="subject-tag-q">Maths</span>
+              <span id="question-number" class="q-number-label">Q1</span>
+            </div>
+            <p id="question-context" class="question-context" style="display:none"></p>
+            <div id="question-text" class="question-text">Loading...</div>
+          </div>
+          <div class="answer-grid" id="answer-grid"></div>
+          <div class="feedback-panel" id="feedback-panel" style="display:none">
+            <div class="feedback-content">
+              <div id="feedback-icon" class="feedback-icon"></div>
+              <div id="feedback-message" class="feedback-message"></div>
+            </div>
+            <button class="btn btn-primary btn-next" onclick="nextQuestion()">
+              Next <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="timer-bar-wrap">
+          <div class="timer-bar" id="timer-bar">
+            <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+          </div>
         </div>
       </div>
     </div>
+
 
     <!-- ===== RESULTS SCREEN ===== -->
     <div id="screen-results" class="screen">
-      <div class="results-wrapper">
+      <div class="page-container">
         <div id="celebration-particles"></div>
-
-        <div class="grade-display">
-          <div class="grade-ring" id="grade-ring">
-            <span id="grade-letter">A+</span>
+        <div class="results-layout">
+          <div class="results-left">
+            <div class="grade-display">
+              <div class="grade-ring" id="grade-ring">
+                <span id="grade-letter">A+</span>
+              </div>
+              <h2 id="results-title">Amazing!</h2>
+              <p id="results-subtitle">You're a star! &#11088;</p>
+            </div>
+            <div class="coins-earned-banner">
+              <span>&#129689;</span>
+              <span>+<span id="coins-earned">0</span> coins earned!</span>
+            </div>
+            <div class="bonus-badges" id="bonus-badges"></div>
+            <div class="results-actions">
+              <button class="btn btn-primary btn-large" onclick="replayQuiz()">
+                <i class="fas fa-redo"></i> Play Again
+              </button>
+              <button class="btn btn-secondary btn-large" onclick="showScreen('home')">
+                <i class="fas fa-home"></i> Home
+              </button>
+              <button class="btn btn-outline btn-large" onclick="showScreen('leaderboard')">
+                <i class="fas fa-trophy"></i> Leaderboard
+              </button>
+            </div>
           </div>
-          <h2 id="results-title">Amazing!</h2>
-          <p id="results-subtitle">You're a star! ⭐</p>
-        </div>
-
-        <div class="results-stats-grid">
-          <div class="result-stat-box correct-box">
-            <span class="result-stat-num" id="result-correct">20</span>
-            <span class="result-stat-lbl">Correct ✅</span>
+          <div class="results-right">
+            <h3 class="results-breakdown-title">Quiz Breakdown</h3>
+            <div class="results-stats-grid">
+              <div class="result-stat-box correct-box">
+                <span class="result-stat-num" id="result-correct">20</span>
+                <span class="result-stat-lbl">Correct &#9989;</span>
+              </div>
+              <div class="result-stat-box wrong-box">
+                <span class="result-stat-num" id="result-wrong">0</span>
+                <span class="result-stat-lbl">Wrong &#10060;</span>
+              </div>
+              <div class="result-stat-box score-box">
+                <span class="result-stat-num" id="result-score">100%</span>
+                <span class="result-stat-lbl">Score &#128202;</span>
+              </div>
+              <div class="result-stat-box time-box">
+                <span class="result-stat-num" id="result-time">0s</span>
+                <span class="result-stat-lbl">Avg. Time &#9201;</span>
+              </div>
+            </div>
+            <div class="results-review" id="results-review">
+              <h4>Question Review</h4>
+              <div id="review-list" class="review-list"></div>
+            </div>
           </div>
-          <div class="result-stat-box wrong-box">
-            <span class="result-stat-num" id="result-wrong">0</span>
-            <span class="result-stat-lbl">Wrong ❌</span>
-          </div>
-          <div class="result-stat-box score-box">
-            <span class="result-stat-num" id="result-score">100%</span>
-            <span class="result-stat-lbl">Score 📊</span>
-          </div>
-        </div>
-
-        <div class="coins-earned-banner">
-          <span class="coins-earned-icon">🪙</span>
-          <span class="coins-earned-text">+<span id="coins-earned">0</span> coins earned!</span>
-        </div>
-
-        <div class="bonus-badges" id="bonus-badges"></div>
-
-        <div class="results-actions">
-          <button class="btn btn-primary btn-large" onclick="replayQuiz()">
-            <i class="fas fa-redo"></i> Play Again
-          </button>
-          <button class="btn btn-secondary btn-large" onclick="showScreen('home')">
-            <i class="fas fa-home"></i> Home
-          </button>
         </div>
       </div>
     </div>
+
 
     <!-- ===== SHOP SCREEN ===== -->
     <div id="screen-shop" class="screen">
-      <div class="navbar">
-        <button class="btn btn-ghost btn-icon" onclick="showScreen('home')">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>🛍️ Shop</h2>
-        <div class="nav-coins">
-          <span>🪙</span><span id="shop-coins">0</span>
+      <div class="page-container">
+        <div class="page-header">
+          <button class="btn btn-ghost btn-back-inline" onclick="showScreen('home')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <div>
+            <h1>&#128717; Rewards Shop</h1>
+            <p>Spend your hard-earned coins on cool items!</p>
+          </div>
+          <div class="hdr-coins large-coins">
+            <span>&#129689;</span><span id="shop-coins">0</span> <span class="coin-lbl">coins</span>
+          </div>
         </div>
-      </div>
-
-      <div class="shop-content">
         <div class="shop-tabs">
-          <button class="shop-tab active" onclick="switchShopTab('avatars',this)">🦸 Avatars</button>
-          <button class="shop-tab" onclick="switchShopTab('themes',this)">🎨 Themes</button>
-          <button class="shop-tab" onclick="switchShopTab('powerups',this)">⚡ Power-ups</button>
+          <button class="shop-tab active" onclick="switchShopTab('avatars',this)">&#129464; Avatars</button>
+          <button class="shop-tab" onclick="switchShopTab('themes',this)">&#127912; Themes</button>
+          <button class="shop-tab" onclick="switchShopTab('powerups',this)">&#9889; Power-ups</button>
         </div>
-
-        <div id="shop-avatars" class="shop-grid" style="display:grid">
-          <!-- Injected by JS -->
-        </div>
-        <div id="shop-themes" class="shop-grid" style="display:none">
-          <!-- Injected by JS -->
-        </div>
-        <div id="shop-powerups" class="shop-grid" style="display:none">
-          <!-- Injected by JS -->
-        </div>
+        <div id="shop-avatars" class="shop-grid"></div>
+        <div id="shop-themes" class="shop-grid" style="display:none"></div>
+        <div id="shop-powerups" class="shop-grid" style="display:none"></div>
       </div>
     </div>
+
 
     <!-- ===== LEADERBOARD SCREEN ===== -->
     <div id="screen-leaderboard" class="screen">
-      <div class="navbar">
-        <button class="btn btn-ghost btn-icon" onclick="showScreen('home')">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>🏆 Leaderboard</h2>
-        <div></div>
-      </div>
-
-      <div class="leaderboard-content">
-        <div class="lb-tabs">
-          <button class="lb-tab active" onclick="switchLbTab('all-time',this)">All Time</button>
-          <button class="lb-tab" onclick="switchLbTab('weekly',this)">This Week</button>
-        </div>
-
-        <div id="leaderboard-podium" class="lb-podium">
-          <!-- Top 3 podium injected by JS -->
-        </div>
-
-        <div id="leaderboard-list" class="lb-list">
-          <!-- Ranks 4+ injected by JS -->
-        </div>
-
-        <div class="challenge-box">
-          <h3>⚔️ Challenge a Friend!</h3>
-          <p>Share your code and compete on the same quiz!</p>
-          <div class="challenge-code-row">
-            <div class="challenge-code-display" id="challenge-code">-- -- --</div>
-            <button class="btn btn-secondary" onclick="generateChallengeCode()">
-              <i class="fas fa-dice"></i> Generate
-            </button>
+      <div class="page-container">
+        <div class="page-header">
+          <button class="btn btn-ghost btn-back-inline" onclick="showScreen('home')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <div>
+            <h1>&#127942; Leaderboard</h1>
+            <p>See who's topping the charts!</p>
           </div>
-          <div class="join-row">
-            <input type="text" id="join-code-input" placeholder="Enter friend's code" maxlength="6">
-            <button class="btn btn-primary" onclick="joinChallenge()">Join!</button>
+          <div></div>
+        </div>
+        <div class="lb-layout">
+          <div class="lb-main">
+            <div class="lb-tabs">
+              <button class="lb-tab active" onclick="switchLbTab('all-time',this)">&#127775; All Time</button>
+              <button class="lb-tab" onclick="switchLbTab('weekly',this)">&#128197; This Week</button>
+              <button class="lb-tab" onclick="switchLbTab('math',this)">&#129518; Maths</button>
+              <button class="lb-tab" onclick="switchLbTab('english',this)">&#128218; English</button>
+            </div>
+            <div id="leaderboard-podium" class="lb-podium"></div>
+            <div class="lb-table-wrap">
+              <table class="lb-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th>Quizzes</th>
+                    <th>Best Score</th>
+                    <th>Points</th>
+                    <th>Streak</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="lb-sidebar">
+            <div class="lb-sidebar-card">
+              <h3><i class="fas fa-bolt"></i> Challenge a Friend</h3>
+              <p>Generate a challenge code and share it with a friend!</p>
+              <div class="challenge-code-display" id="challenge-code">&mdash; &mdash; &mdash; &mdash;</div>
+              <button class="btn btn-primary btn-block" onclick="generateChallengeCode()" style="margin:8px 0">
+                <i class="fas fa-dice"></i> Generate Code
+              </button>
+              <div class="join-row">
+                <input type="text" id="join-code-input" placeholder="Friend's code" maxlength="6">
+                <button class="btn btn-secondary" onclick="joinChallenge()">Join!</button>
+              </div>
+            </div>
+            <div class="lb-sidebar-card">
+              <h3><i class="fas fa-users"></i> Online Now</h3>
+              <div id="online-players" class="online-players"></div>
+            </div>
+            <div class="lb-sidebar-card my-rank-card">
+              <h3>Your Rank</h3>
+              <div class="my-rank-display">
+                <span class="my-rank-num" id="my-rank-num">#&mdash;</span>
+                <div>
+                  <div id="my-rank-name">&mdash;</div>
+                  <div id="my-rank-pts" class="my-rank-sub">0 points</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
 
     <!-- ===== PROFILE SCREEN ===== -->
     <div id="screen-profile" class="screen">
-      <div class="navbar">
-        <button class="btn btn-ghost btn-icon" onclick="showScreen('home')">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <h2>Profile</h2>
-        <button class="btn btn-ghost btn-icon" onclick="handleLogout()" title="Log Out">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
-      </div>
-
-      <div class="profile-content">
-        <div class="profile-hero">
-          <div class="profile-avatar-wrap">
-            <div class="profile-avatar" id="profile-avatar">🐶</div>
-            <button class="change-avatar-btn" onclick="showScreen('shop')">Change</button>
-          </div>
-          <h2 id="profile-name">Player</h2>
-          <p id="profile-email" class="profile-email"></p>
-          <div class="profile-rank" id="profile-rank">🎓 Beginner</div>
+      <div class="page-container">
+        <div class="page-header">
+          <button class="btn btn-ghost btn-back-inline" onclick="showScreen('home')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <h1>My Profile</h1>
+          <button class="btn btn-danger-outline" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt"></i> Log Out
+          </button>
         </div>
-
-        <div class="profile-stats-grid">
-          <div class="profile-stat">
-            <span class="profile-stat-val" id="profile-total-points">0</span>
-            <span class="profile-stat-lbl">Total Points</span>
+        <div class="profile-layout">
+          <div class="profile-left">
+            <div class="profile-hero-card">
+              <div class="profile-avatar-wrap">
+                <div class="profile-avatar" id="profile-avatar">&#128054;</div>
+                <button class="change-avatar-btn" onclick="showScreen('shop')">
+                  <i class="fas fa-edit"></i> Change
+                </button>
+              </div>
+              <h2 id="profile-name">Player</h2>
+              <p id="profile-email" class="profile-email"></p>
+              <div class="profile-rank-badge" id="profile-rank">&#127891; Beginner</div>
+            </div>
+            <div class="profile-stats-card">
+              <h3>Stats Overview</h3>
+              <div class="profile-stats-grid">
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-total-points">0</span>
+                  <span class="ps-lbl">Total Points</span>
+                </div>
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-coins">0</span>
+                  <span class="ps-lbl">&#129689; Coins</span>
+                </div>
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-quizzes">0</span>
+                  <span class="ps-lbl">Quizzes</span>
+                </div>
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-streak">0</span>
+                  <span class="ps-lbl">&#128293; Streak</span>
+                </div>
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-best-score">0%</span>
+                  <span class="ps-lbl">Best Score</span>
+                </div>
+                <div class="ps-stat">
+                  <span class="ps-val" id="profile-avg-score">0%</span>
+                  <span class="ps-lbl">Avg Score</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="profile-stat">
-            <span class="profile-stat-val" id="profile-coins">0</span>
-            <span class="profile-stat-lbl">🪙 Coins</span>
+          <div class="profile-right">
+            <div class="achievements-card">
+              <h3>&#127885; Achievements</h3>
+              <div id="achievements-grid" class="achievements-grid"></div>
+            </div>
+            <div class="quiz-history-card">
+              <h3>&#128203; Quiz History</h3>
+              <div id="quiz-history-list" class="quiz-history-list">
+                <p class="empty-state">No quiz history yet.</p>
+              </div>
+            </div>
           </div>
-          <div class="profile-stat">
-            <span class="profile-stat-val" id="profile-quizzes">0</span>
-            <span class="profile-stat-lbl">Quizzes</span>
-          </div>
-          <div class="profile-stat">
-            <span class="profile-stat-val" id="profile-streak">0</span>
-            <span class="profile-stat-lbl">🔥 Streak</span>
-          </div>
-        </div>
-
-        <div class="achievements-section">
-          <h3>🏅 Achievements</h3>
-          <div id="achievements-grid" class="achievements-grid">
-            <!-- Injected by JS -->
-          </div>
-        </div>
-
-        <button class="btn btn-danger btn-block" onclick="handleLogout()">
-          <i class="fas fa-sign-out-alt"></i> Log Out
-        </button>
-      </div>
-    </div>
-
-    <!-- Toast notification -->
-    <div id="toast" class="toast"></div>
-
-    <!-- Confetti container -->
-    <div id="confetti-container" class="confetti-container"></div>
-
-    <!-- Shop confirmation modal -->
-    <div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal()">
-      <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-icon" id="modal-icon">🛍️</div>
-        <h3 id="modal-title">Buy Item?</h3>
-        <p id="modal-body">Are you sure?</p>
-        <div class="modal-actions">
-          <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" id="modal-confirm">Buy</button>
         </div>
       </div>
     </div>
 
   </div><!-- #app -->
+
+  <!-- Global overlays -->
+  <div id="toast" class="toast"></div>
+  <div id="confetti-container" class="confetti-container"></div>
+  <div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-icon" id="modal-icon">&#128717;</div>
+      <h3 id="modal-title">Buy Item?</h3>
+      <p id="modal-body">Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/questions.js"></script>
   <script src="js/app.js"></script>

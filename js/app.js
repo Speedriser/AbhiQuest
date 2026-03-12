@@ -1,5 +1,6 @@
 /* =============================================
-   AbhiQuest - Main Application Logic
+   RADT Quest - Main Application Logic
+   Multi-user, website-design version
    ============================================= */
 
 // ─── SHOP CATALOG ─────────────────────────────
@@ -28,167 +29,131 @@ const SHOP_CATALOG = {
   ],
   powerups: [
     { id:'pu_2x',     icon:'⚡', name:'Double XP',  price:150,  type:'powerup', desc:'Double points on your next quiz!' },
-    { id:'pu_hint',   icon:'💡', name:'Hint Pack',  price:75,   type:'powerup', desc:'Show a hint on 5 hard questions!' },
-    { id:'pu_shield', icon:'🛡️', name:'Shield',    price:100,  type:'powerup', desc:'Wrong answers don\'t lose streak!' },
+    { id:'pu_hint',   icon:'💡', name:'Hint Pass',  price:100,  type:'powerup', desc:'Reveal one wrong answer per quiz' },
+    { id:'pu_skip',   icon:'⏭️', name:'Skip Card',  price:120,  type:'powerup', desc:'Skip 2 hard questions' },
+    { id:'pu_shield', icon:'🛡️', name:'Time Shield',price:180,  type:'powerup', desc:'No timer pressure for one quiz' },
+    { id:'pu_streak', icon:'🔥', name:'Streak Saver',price:200, type:'powerup', desc:'Protects your streak if you lose' },
   ]
 };
 
-// ─── ACHIEVEMENTS ─────────────────────────────
-const ACHIEVEMENTS_LIST = [
-  { id:'first_quiz',   icon:'🎓', name:'First Steps',    desc:'Complete your first quiz', check: s => s.quizCount >= 1 },
-  { id:'quiz_5',       icon:'📚', name:'Bookworm',        desc:'Complete 5 quizzes',       check: s => s.quizCount >= 5 },
-  { id:'quiz_20',      icon:'🎯', name:'Dedicated',       desc:'Complete 20 quizzes',      check: s => s.quizCount >= 20 },
-  { id:'quiz_50',      icon:'🏆', name:'Champion',        desc:'Complete 50 quizzes',      check: s => s.quizCount >= 50 },
-  { id:'perfect',      icon:'⭐', name:'Perfectionist',   desc:'Get a perfect 20/20 score', check: s => s.perfectCount >= 1 },
-  { id:'perfect_5',    icon:'🌟', name:'Star Player',     desc:'Get 5 perfect scores',     check: s => s.perfectCount >= 5 },
-  { id:'streak_3',     icon:'🔥', name:'On Fire',         desc:'3 day learning streak',    check: s => s.streak >= 3 },
-  { id:'streak_7',     icon:'🌈', name:'Week Warrior',    desc:'7 day learning streak',    check: s => s.streak >= 7 },
-  { id:'coins_500',    icon:'🪙', name:'Coin Collector',  desc:'Earn 500 coins total',     check: s => s.totalCoinsEarned >= 500 },
-  { id:'coins_2000',   icon:'💰', name:'Rich Scholar',    desc:'Earn 2000 coins total',    check: s => s.totalCoinsEarned >= 2000 },
-  { id:'maths_master', icon:'🧮', name:'Maths Master',    desc:'Complete 10 maths quizzes', check: s => s.mathQuizCount >= 10 },
-  { id:'word_wizard',  icon:'📖', name:'Word Wizard',     desc:'Complete 10 English quizzes', check: s => s.engQuizCount >= 10 },
+// ─── ACHIEVEMENT DEFINITIONS ──────────────────
+const ACHIEVEMENTS = [
+  { id:'first_quiz',   icon:'🎉', name:'First Quest',    desc:'Complete your first quiz',          check: u => u.quizzesCompleted >= 1 },
+  { id:'five_quizzes', icon:'📚', name:'Bookworm',       desc:'Complete 5 quizzes',                check: u => u.quizzesCompleted >= 5 },
+  { id:'ten_quizzes',  icon:'🎓', name:'Scholar',        desc:'Complete 10 quizzes',               check: u => u.quizzesCompleted >= 10 },
+  { id:'perfect',      icon:'💯', name:'Perfect Score',  desc:'Get 100% on any quiz',              check: u => (u.bestScore || 0) >= 100 },
+  { id:'streak3',      icon:'🔥', name:'On Fire!',       desc:'Get 3 questions right in a row',    check: u => (u.maxStreak || 0) >= 3 },
+  { id:'streak5',      icon:'💥', name:'Unstoppable',    desc:'Get 5 questions right in a row',    check: u => (u.maxStreak || 0) >= 5 },
+  { id:'coins100',     icon:'🪙', name:'Coin Collector', desc:'Earn 100 coins total',              check: u => (u.totalCoinsEarned || 0) >= 100 },
+  { id:'coins500',     icon:'💰', name:'Treasure Hunter',desc:'Earn 500 coins total',              check: u => (u.totalCoinsEarned || 0) >= 500 },
+  { id:'math_master',  icon:'🧮', name:'Maths Master',   desc:'Complete 5 maths quizzes',          check: u => (u.mathQuizzes || 0) >= 5 },
+  { id:'eng_master',   icon:'📖', name:'Word Wizard',    desc:'Complete 5 English quizzes',        check: u => (u.englishQuizzes || 0) >= 5 },
+  { id:'speed_demon',  icon:'⚡', name:'Speed Demon',    desc:'Answer 10 questions under 5s each', check: u => (u.fastAnswers || 0) >= 10 },
+  { id:'social',       icon:'👥', name:'Team Player',    desc:'Use the friend challenge feature',  check: u => u.usedChallenge === true },
 ];
 
-// ─── DEFAULT STATE ─────────────────────────────
-function defaultState() {
+// ─── DEMO USERS (simulating other users for leaderboard) ──
+const DEMO_USERS = [
+  { name:'SuperStar_Raj',  avatar:'🦁', points:1850, coins:320, quizzesCompleted:24, bestScore:100, streak:7, mathQuizzes:14, englishQuizzes:10 },
+  { name:'QuizWizard_Amy', avatar:'🐼', points:1620, coins:280, quizzesCompleted:20, bestScore:95,  streak:5, mathQuizzes:10, englishQuizzes:10 },
+  { name:'BrainPower_Max', avatar:'🤖', points:1400, coins:210, quizzesCompleted:18, bestScore:90,  streak:4, mathQuizzes:12, englishQuizzes:6  },
+  { name:'MathKing_Leo',   avatar:'🐉', points:1200, coins:190, quizzesCompleted:15, bestScore:100, streak:6, mathQuizzes:15, englishQuizzes:0  },
+  { name:'SpellBee_Zara',  avatar:'🦋', points:980,  coins:150, quizzesCompleted:12, bestScore:85,  streak:3, mathQuizzes:3,  englishQuizzes:9  },
+  { name:'NumberNinja_Kai',avatar:'🐸', points:820,  coins:120, quizzesCompleted:10, bestScore:80,  streak:2, mathQuizzes:8,  englishQuizzes:2  },
+  { name:'WordSmith_Eva',  avatar:'🦊', points:650,  coins:100, quizzesCompleted:8,  bestScore:75,  streak:1, mathQuizzes:2,  englishQuizzes:6  },
+  { name:'QuickCalc_Tom',  avatar:'🐱', points:480,  coins:80,  quizzesCompleted:6,  bestScore:70,  streak:0, mathQuizzes:5,  englishQuizzes:1  },
+];
+
+// ─── STATE ─────────────────────────────────────
+let currentUser  = null;
+let quizState    = null;
+let timerInterval = null;
+let currentSubject = 'math';
+let currentTopic   = null;
+let currentDiff    = null;
+let currentScreen  = 'landing';
+let challengeQuestions = null;
+
+// ─── STORAGE HELPERS ───────────────────────────
+const USERS_KEY   = 'radtquest_users';
+const SESSION_KEY = 'radtquest_session';
+
+function getAllUsers() {
+  return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+}
+function saveAllUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+function getUser(email) {
+  return getAllUsers()[email.toLowerCase()] || null;
+}
+function saveUser(user) {
+  const all = getAllUsers();
+  all[user.email.toLowerCase()] = user;
+  saveAllUsers(all);
+}
+function saveSession(email) {
+  localStorage.setItem(SESSION_KEY, email.toLowerCase());
+}
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+function getSavedSession() {
+  return localStorage.getItem(SESSION_KEY);
+}
+
+function createNewUser(name, email, password) {
   return {
-    name: 'Player',
-    email: '',
-    avatar: '🐶',
-    avatarId: 'av_dog',
-    coins: 50,              // start with 50 coins
-    totalPoints: 0,
-    weeklyPoints: 0,
-    quizCount: 0,
-    mathQuizCount: 0,
-    engQuizCount: 0,
-    perfectCount: 0,
+    name, email: email.toLowerCase(), password,
+    avatar: 'av_dog',
+    theme: 'th_default',
+    coins: 50,
+    points: 0,
+    quizzesCompleted: 0,
+    mathQuizzes: 0,
+    englishQuizzes: 0,
     bestScore: 0,
+    totalScore: 0,
     streak: 0,
-    lastPlayDate: null,
-    inventory: ['av_dog','th_default'],
-    equippedTheme: 'th_default',
-    activePowerup: null,
+    lastActiveDate: null,
+    maxStreak: 0,
     totalCoinsEarned: 50,
-    achievements: [],
-    isGuest: false,
-    weekStart: getWeekStart()
+    fastAnswers: 0,
+    usedChallenge: false,
+    ownedItems: ['av_dog', 'th_default'],
+    quizHistory: [],
+    createdAt: Date.now()
   };
 }
 
-// ─── APP STATE ────────────────────────────────
-let AppState = {
-  user: defaultState(),
-  currentScreen: 'landing',
-  currentSubject: null,
-  currentTopic: null,
-  currentDifficulty: null,
-  quiz: null,
-  leaderboardTab: 'all-time',
-  shopTab: 'avatars',
-  timerInterval: null
-};
+// ─── SCREEN MANAGEMENT ─────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) {
+    el.classList.add('active');
+    currentScreen = name;
+    window.scrollTo(0, 0);
+  }
 
-// ─── STORAGE ──────────────────────────────────
-function saveUser() {
-  localStorage.setItem('abhiquest_user', JSON.stringify(AppState.user));
-}
-
-function loadUser() {
-  try {
-    const raw = localStorage.getItem('abhiquest_user');
-    if (raw) {
-      const u = JSON.parse(raw);
-      AppState.user = { ...defaultState(), ...u };
+  const loggedIn = !!currentUser;
+  const hdr = document.getElementById('site-header');
+  if (hdr) {
+    if (loggedIn && name !== 'landing' && name !== 'auth') {
+      hdr.classList.remove('hidden');
+    } else {
+      hdr.classList.add('hidden');
     }
-  } catch (e) {}
-}
-
-function saveLeaderboard(entry) {
-  try {
-    const lb = getLeaderboardData();
-    const idx = lb.findIndex(e => e.id === entry.id);
-    if (idx >= 0) lb[idx] = entry;
-    else lb.push(entry);
-    localStorage.setItem('abhiquest_leaderboard', JSON.stringify(lb));
-  } catch (e) {}
-}
-
-function getLeaderboardData() {
-  try {
-    return JSON.parse(localStorage.getItem('abhiquest_leaderboard') || '[]');
-  } catch (e) { return []; }
-}
-
-// ─── HELPERS ──────────────────────────────────
-function getWeekStart() {
-  const d = new Date();
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay());
-  return d.toISOString();
-}
-
-function updateStreak() {
-  const today = new Date().toDateString();
-  const last = AppState.user.lastPlayDate;
-  if (!last) {
-    AppState.user.streak = 1;
-  } else {
-    const lastDate = new Date(last).toDateString();
-    const diff = (new Date(today) - new Date(lastDate)) / 86400000;
-    if (diff === 0) { /* same day, no change */ }
-    else if (diff === 1) { AppState.user.streak++; }
-    else { AppState.user.streak = 1; }
   }
-  AppState.user.lastPlayDate = new Date().toISOString();
+
+  if (name === 'home')        refreshHome();
+  if (name === 'shop')        renderShop();
+  if (name === 'leaderboard') renderLeaderboard('all-time');
+  if (name === 'profile')     renderProfile();
+  if (name === 'results')     {} // populated by finishQuiz()
 }
 
-function getRank(points) {
-  if (points >= 5000) return '👑 Grand Master';
-  if (points >= 2000) return '💎 Expert';
-  if (points >= 1000) return '🥇 Advanced';
-  if (points >= 500)  return '🥈 Intermediate';
-  if (points >= 200)  return '🥉 Learner';
-  return '🎓 Beginner';
-}
-
-function getGrade(score) {
-  if (score === 100) return { letter: 'A+', label: 'Perfect!', class: 'grade-a' };
-  if (score >= 90)   return { letter: 'A',  label: 'Excellent!', class: 'grade-a' };
-  if (score >= 80)   return { letter: 'B',  label: 'Great job!', class: 'grade-b' };
-  if (score >= 70)   return { letter: 'C',  label: 'Good work!', class: 'grade-c' };
-  if (score >= 60)   return { letter: 'D',  label: 'Keep going!', class: 'grade-d' };
-  return { letter: 'F', label: 'Try again!', class: 'grade-d' };
-}
-
-function calcCoins(correct, total, hasPowerup) {
-  const baseCoins = correct * 10;
-  const bonusCoins = correct === total ? 50 : correct >= total * 0.8 ? 25 : 0;
-  const streakBonus = AppState.quiz.maxStreak >= 5 ? 20 : AppState.quiz.maxStreak >= 3 ? 10 : 0;
-  return Math.floor((baseCoins + bonusCoins + streakBonus) * (hasPowerup ? 2 : 1));
-}
-
-// ─── SCREEN NAVIGATION ────────────────────────
-function showScreen(screenId) {
-  const current = document.querySelector('.screen.active');
-  if (current) {
-    current.classList.remove('active');
-    current.classList.add('slide-out');
-    setTimeout(() => current.classList.remove('slide-out'), 300);
-  }
-  const next = document.getElementById('screen-' + screenId);
-  if (!next) return;
-  next.classList.add('active');
-  AppState.currentScreen = screenId;
-
-  // Screen-specific init
-  if (screenId === 'home') updateHomeScreen();
-  if (screenId === 'shop') renderShop();
-  if (screenId === 'leaderboard') renderLeaderboard();
-  if (screenId === 'profile') renderProfile();
-}
-
-// ─── AUTH FUNCTIONS ───────────────────────────
+// ─── AUTH ──────────────────────────────────────
 function showAuth(mode) {
   showScreen('auth');
   toggleAuthMode(mode);
@@ -197,700 +162,905 @@ function showAuth(mode) {
 function toggleAuthMode(mode) {
   document.getElementById('auth-login').style.display    = mode === 'login'    ? 'block' : 'none';
   document.getElementById('auth-register').style.display = mode === 'register' ? 'block' : 'none';
-  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-error').style.display    = 'none';
 }
 
 function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-password').value;
+  const raw = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-password').value;
 
-  // Try loading from localStorage by email
+  // Find by email or name
   const allUsers = getAllUsers();
-  const found = allUsers.find(u => u.email === email);
-  if (!found) { showAuthError('No account found with this email.'); return; }
-  if (found.password !== hashPass(pass)) { showAuthError('Incorrect password.'); return; }
+  let found = null;
+  const key = raw.toLowerCase();
+  if (allUsers[key]) {
+    found = allUsers[key];
+  } else {
+    found = Object.values(allUsers).find(u => u.name.toLowerCase() === key) || null;
+  }
 
-  AppState.user = { ...defaultState(), ...found };
-  AppState.user.password = undefined;
-  delete AppState.user.password;
-  saveUser();
-  postLogin();
+  if (!found || found.password !== pwd) {
+    showAuthError('Incorrect email/username or password.');
+    return;
+  }
+  loginUser(found);
 }
 
 function handleRegister(e) {
   e.preventDefault();
   const name  = document.getElementById('register-name').value.trim();
-  const email = document.getElementById('register-email').value.trim();
-  const pass  = document.getElementById('register-password').value;
+  const email = document.getElementById('register-email').value.trim().toLowerCase();
+  const pwd   = document.getElementById('register-password').value;
 
-  const allUsers = getAllUsers();
-  if (allUsers.find(u => u.email === email)) { showAuthError('An account with this email already exists.'); return; }
+  if (name.length < 2) { showAuthError('Name must be at least 2 characters.'); return; }
+  if (getUser(email))  { showAuthError('An account with this email already exists.'); return; }
 
-  const newUser = {
-    ...defaultState(),
-    id: 'u_' + Date.now(),
-    name,
-    email,
-    isGuest: false
-  };
-
-  // Save to all-users store
-  allUsers.push({ ...newUser, password: hashPass(pass) });
-  localStorage.setItem('abhiquest_all_users', JSON.stringify(allUsers));
-
-  AppState.user = newUser;
-  saveUser();
-  postLogin();
-}
-
-function getAllUsers() {
-  try { return JSON.parse(localStorage.getItem('abhiquest_all_users') || '[]'); } catch(e) { return []; }
-}
-
-function hashPass(pass) {
-  // Simple hash for demo (not for production)
-  let h = 0;
-  for (let i = 0; i < pass.length; i++) h = (Math.imul(31, h) + pass.charCodeAt(i)) | 0;
-  return String(h);
+  const newUser = createNewUser(name, email, pwd);
+  saveUser(newUser);
+  loginUser(newUser);
 }
 
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
-  el.textContent = '⚠️ ' + msg;
+  el.textContent = msg;
   el.style.display = 'block';
 }
 
-function playAsGuest() {
-  AppState.user = { ...defaultState(), id: 'guest_' + Date.now(), name: 'Guest', isGuest: true };
-  saveUser();
-  postLogin();
-}
-
-function postLogin() {
-  updateStreak();
-  applyTheme();
+function loginUser(user) {
+  currentUser = user;
+  saveSession(user.email);
+  updateDayStreak();
   showScreen('home');
-  showToast('Welcome back, ' + AppState.user.name + '! 👋', 'success');
+  showToast('Welcome back, ' + user.name + '! 🎉');
 }
 
 function handleLogout() {
-  saveUser();
-  AppState.user = defaultState();
+  currentUser = null;
+  clearSession();
   showScreen('landing');
-  showToast('See you next time! 👋');
+  showToast('Logged out. See you soon!');
 }
 
-// ─── HOME SCREEN ──────────────────────────────
-function updateHomeScreen() {
-  const u = AppState.user;
-  document.getElementById('home-avatar').textContent   = u.avatar;
-  document.getElementById('home-username').textContent = u.name;
-  document.getElementById('home-coins').textContent    = u.coins;
-  document.getElementById('nav-streak').textContent    = u.streak;
+function playAsGuest() {
+  currentUser = createNewUser('Guest', '__guest__@radtquest', '');
+  currentUser.isGuest = true;
+  showScreen('home');
+}
 
+function toggleMobileNav() {
+  const nav = document.getElementById('site-nav');
+  nav.classList.toggle('mobile-open');
+}
+
+// ─── DAY STREAK ────────────────────────────────
+function updateDayStreak() {
+  if (!currentUser || currentUser.isGuest) return;
+  const today = new Date().toDateString();
+  const last  = currentUser.lastActiveDate;
+  if (last !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (last === yesterday) {
+      currentUser.streak++;
+    } else if (last && last !== today) {
+      currentUser.streak = 1;
+    } else if (!last) {
+      currentUser.streak = 1;
+    }
+    currentUser.lastActiveDate = today;
+    saveUser(currentUser);
+  }
+}
+
+// ─── HOME / DASHBOARD ──────────────────────────
+function refreshHome() {
+  if (!currentUser) return;
+  const u = currentUser;
+  const avatar = getAvatarIcon(u.avatar);
+  const rank   = getRank(u.points);
+
+  // Header
+  document.getElementById('hdr-coins').textContent    = u.coins;
+  document.getElementById('hdr-avatar').textContent   = avatar;
+  document.getElementById('hdr-username').textContent = u.name;
+
+  // Sidebar
+  document.getElementById('sidebar-avatar').textContent   = avatar;
+  document.getElementById('sidebar-username').textContent = u.name;
+  document.getElementById('sidebar-rank').textContent     = rank;
+  document.getElementById('sb-points').textContent  = u.points;
+  document.getElementById('sb-coins').textContent   = u.coins;
+  document.getElementById('sb-quizzes').textContent = u.quizzesCompleted;
+  const best = u.quizzesCompleted > 0 ? u.bestScore + '%' : '0%';
+  document.getElementById('sb-best').textContent    = best;
+
+  // Greeting
   const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  let greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   document.getElementById('home-greeting-text').textContent = greet + ', ' + u.name.split(' ')[0] + '! 🎯';
 
-  document.getElementById('stat-total-points').textContent = u.totalPoints;
-  document.getElementById('stat-quizzes').textContent      = u.quizCount;
-  document.getElementById('stat-best').textContent         = u.bestScore + '%';
+  // Streak
+  document.getElementById('dash-streak').textContent = u.streak || 0;
 
-  const mathPct = Math.min(100, u.mathQuizCount * 5);
-  const engPct  = Math.min(100, u.engQuizCount * 5);
-  document.getElementById('math-progress-bar').style.width  = mathPct + '%';
-  document.getElementById('english-progress-bar').style.width = engPct + '%';
-  document.getElementById('math-progress-text').textContent  = u.mathQuizCount + ' quizzes';
-  document.getElementById('english-progress-text').textContent = u.engQuizCount + ' quizzes';
+  // Progress bars
+  const mq  = u.mathQuizzes    || 0;
+  const eq  = u.englishQuizzes || 0;
+  const maxQ = 20;
+  document.getElementById('math-progress-bar').style.width    = Math.min(mq / maxQ * 100, 100) + '%';
+  document.getElementById('english-progress-bar').style.width = Math.min(eq / maxQ * 100, 100) + '%';
+  document.getElementById('math-progress-text').textContent    = mq + ' quiz' + (mq !== 1 ? 'zes' : '');
+  document.getElementById('english-progress-text').textContent = eq + ' quiz' + (eq !== 1 ? 'zes' : '');
+
+  // Recent quizzes
+  renderRecentQuizzes();
+
+  // Mini leaderboard
+  renderMiniLeaderboard();
 }
 
-// ─── QUIZ SETUP ───────────────────────────────
-function showQuizSetup(subject) {
-  AppState.currentSubject = subject;
-  AppState.currentTopic = null;
-  AppState.currentDifficulty = null;
-  document.getElementById('setup-title').textContent = subject === 'math' ? '🧮 Maths Quiz' : '📖 English Quiz';
-  document.getElementById('math-setup').style.display    = subject === 'math'    ? 'block' : 'none';
-  document.getElementById('english-setup').style.display = subject === 'english' ? 'block' : 'none';
+function renderRecentQuizzes() {
+  const cont = document.getElementById('recent-quizzes-list');
+  const hist = (currentUser.quizHistory || []).slice().reverse().slice(0, 5);
+  if (!hist.length) {
+    cont.innerHTML = '<p class="empty-state">No quizzes yet – start one above! 🚀</p>';
+    return;
+  }
+  cont.innerHTML = hist.map(h => {
+    const pct = Math.round(h.score);
+    const cls = pct >= 80 ? 'good' : pct >= 50 ? 'ok' : 'bad';
+    const ico = h.subject === 'math' ? '🧮' : '📖';
+    return `<div class="recent-item">
+      <span class="ri-icon">${ico}</span>
+      <div class="ri-info">
+        <div class="ri-title">${cap(h.topic)} – ${cap(h.difficulty)}</div>
+        <div class="ri-meta">${new Date(h.date).toLocaleDateString()}</div>
+      </div>
+      <span class="ri-score ${cls}">${pct}%</span>
+    </div>`;
+  }).join('');
+}
 
-  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-  document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('selected'));
+function renderMiniLeaderboard() {
+  const all = buildAllTimeLeaderboard().slice(0, 5);
+  const cont = document.getElementById('mini-leaderboard');
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  cont.innerHTML = all.map((p, i) => {
+    const isMe = currentUser && p.name === currentUser.name;
+    return `<div class="mini-lb-item ${isMe ? 'me' : ''}">
+      <span class="mini-rank">${medals[i]}</span>
+      <span class="mini-avatar">${p.avatar}</span>
+      <span class="mini-name">${p.name}${isMe ? ' (You)' : ''}</span>
+      <span class="mini-pts">${p.points} pts</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── QUIZ SETUP ────────────────────────────────
+function showQuizSetup(subj) {
+  currentSubject = subj || 'math';
+  currentTopic   = null;
+  currentDiff    = null;
+  showScreen('quiz-setup');
+
+  // Reset selections
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('active'));
   document.getElementById('start-quiz-btn').disabled = true;
 
-  showScreen('quiz-setup');
+  // Toggle subject UI
+  selectSubject(currentSubject, true);
+}
+
+function selectSubject(subj, noToggle) {
+  currentSubject = subj;
+  currentTopic   = null;
+  document.getElementById('math-setup').style.display    = subj === 'math'    ? 'block' : 'none';
+  document.getElementById('english-setup').style.display = subj === 'english' ? 'block' : 'none';
+  document.getElementById('ss-math').classList.toggle('active',    subj === 'math');
+  document.getElementById('ss-english').classList.toggle('active', subj === 'english');
+  if (!noToggle) {
+    document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('start-quiz-btn').disabled = true;
+  }
 }
 
 function selectTopic(topic, el) {
-  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  AppState.currentTopic = topic;
-  checkSetupReady();
+  currentTopic = topic;
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  checkStartReady();
 }
 
 function selectDifficulty(diff, el) {
-  document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  AppState.currentDifficulty = diff;
-  checkSetupReady();
+  currentDiff = diff;
+  document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  checkStartReady();
 }
 
-function checkSetupReady() {
-  const ready = AppState.currentTopic && AppState.currentDifficulty;
-  document.getElementById('start-quiz-btn').disabled = !ready;
+function checkStartReady() {
+  document.getElementById('start-quiz-btn').disabled = !(currentTopic && currentDiff);
 }
 
-// ─── QUIZ ENGINE ──────────────────────────────
+// ─── QUIZ LOGIC ────────────────────────────────
 function startQuiz() {
-  const { currentSubject: subj, currentTopic: topic, currentDifficulty: diff } = AppState;
-  const questions = buildQuiz(subj, topic, diff, 20);
+  if (!currentTopic || !currentDiff) return;
 
-  AppState.quiz = {
+  // Power-up: Double XP active?
+  const doubleXp = currentUser && (currentUser.activePowerup === 'pu_2x');
+  const noTimer  = currentUser && (currentUser.activePowerup === 'pu_shield');
+
+  const questions = challengeQuestions || generateQuestions(currentSubject, currentTopic, currentDiff, 20);
+  challengeQuestions = null;
+
+  quizState = {
     questions,
-    currentIndex: 0,
+    current: 0,
     correct: 0,
     wrong: 0,
-    coinsEarned: 0,
-    currentStreak: 0,
+    coins: 0,
+    streak: 0,
     maxStreak: 0,
-    answered: false,
-    hasPowerup: AppState.user.activePowerup === 'pu_2x'
+    doubleXp,
+    noTimer,
+    answerTimes: [],
+    answers: [],
+    subject: currentSubject,
+    topic: currentTopic,
+    difficulty: currentDiff,
+    qStartTime: 0
   };
 
   showScreen('quiz');
   renderQuestion();
 }
 
+function generateQuestions(subj, topic, diff, n) {
+  const qs = [];
+  for (let i = 0; i < n; i++) {
+    qs.push(generateOneQuestion(subj, topic, diff));
+  }
+  return qs;
+}
+
 function renderQuestion() {
-  const q = AppState.quiz;
-  if (q.currentIndex >= q.questions.length) { finishQuiz(); return; }
+  const s  = quizState;
+  const q  = s.questions[s.current];
+  const pct = (s.current / s.questions.length) * 100;
 
-  const current = q.questions[q.currentIndex];
-  const num = q.currentIndex + 1;
-
-  // Header
-  const pct = (num - 1) / q.questions.length * 100;
   document.getElementById('quiz-progress-fill').style.width = pct + '%';
-  document.getElementById('quiz-q-count').textContent = num + ' / ' + q.questions.length;
-  document.getElementById('quiz-coins').textContent = q.coinsEarned;
+  document.getElementById('quiz-q-count').textContent = (s.current + 1) + ' / ' + s.questions.length;
+  document.getElementById('quiz-coins').textContent   = s.coins;
+  document.getElementById('question-text').textContent = q.question;
+  document.getElementById('question-number').textContent = 'Q' + (s.current + 1);
+  document.getElementById('question-subject-tag').textContent = s.subject === 'math' ? '🧮 Maths' : '📖 English';
+
+  const ctx = document.getElementById('question-context');
+  if (q.context) {
+    ctx.textContent  = q.context;
+    ctx.style.display = 'block';
+  } else {
+    ctx.style.display = 'none';
+  }
 
   // Streak badge
-  const badge = document.getElementById('streak-badge');
-  if (q.currentStreak >= 3) {
-    badge.style.display = 'block';
-    document.getElementById('quiz-streak').textContent = q.currentStreak;
+  const sb = document.getElementById('streak-badge');
+  if (s.streak >= 3) {
+    sb.style.display = 'block';
+    document.getElementById('quiz-streak').textContent = s.streak;
   } else {
-    badge.style.display = 'none';
+    sb.style.display = 'none';
   }
-
-  // Question
-  document.getElementById('question-subject-tag').textContent = current.subject === 'math' ? '🧮 Maths' : '📖 English';
-  document.getElementById('question-number').textContent = 'Q' + num;
-  document.getElementById('question-text').textContent = current.question;
-
-  const ctxEl = document.getElementById('question-context');
-  if (current.context) {
-    ctxEl.textContent = current.context;
-    ctxEl.style.display = 'block';
-  } else {
-    ctxEl.style.display = 'none';
-  }
-
-  // Reset card
-  const card = document.getElementById('question-card');
-  card.classList.remove('correct-flash', 'wrong-flash');
 
   // Answer buttons
   const grid = document.getElementById('answer-grid');
   grid.innerHTML = '';
-  current.options.forEach(opt => {
+  q.options.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'answer-btn';
+    btn.className   = 'answer-btn';
     btn.textContent = opt;
-    btn.onclick = () => checkAnswer(opt, btn, current);
+    btn.onclick     = () => answerQuestion(opt, btn);
     grid.appendChild(btn);
   });
 
-  // Feedback
   document.getElementById('feedback-panel').style.display = 'none';
-  q.answered = false;
 
-  // Timer
-  resetTimer();
+  // Start timer
+  startQuestionTimer(s.noTimer ? 0 : 30);
+  s.qStartTime = Date.now();
 }
 
-function checkAnswer(selected, btn, question) {
-  if (AppState.quiz.answered) return;
-  AppState.quiz.answered = true;
+function answerQuestion(selected, btn) {
+  clearInterval(timerInterval);
+  const s = quizState;
+  const q = s.questions[s.current];
+  const timeMs = Date.now() - s.qStartTime;
 
-  clearInterval(AppState.timerInterval);
-
-  const correct = selected === question.answer;
-  const card = document.getElementById('question-card');
+  s.answerTimes.push(timeMs);
+  s.answers.push({ question: q.question, selected, correct: q.answer, isCorrect: selected === q.answer });
 
   // Disable all buttons
-  document.querySelectorAll('.answer-btn').forEach(b => {
-    b.disabled = true;
-    if (b.textContent === question.answer) b.classList.add(correct ? 'correct' : 'reveal-correct');
-  });
+  document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
 
-  if (correct) {
+  if (selected === q.answer) {
     btn.classList.add('correct');
-    card.classList.add('correct-flash');
-    AppState.quiz.correct++;
-    AppState.quiz.currentStreak++;
-    if (AppState.quiz.currentStreak > AppState.quiz.maxStreak) AppState.quiz.maxStreak = AppState.quiz.currentStreak;
+    s.correct++;
+    s.streak++;
+    if (s.streak > s.maxStreak) s.maxStreak = s.streak;
 
-    const coins = 10 + (AppState.quiz.currentStreak >= 3 ? 5 : 0);
-    AppState.quiz.coinsEarned += coins;
-    document.getElementById('quiz-coins').textContent = AppState.quiz.coinsEarned;
+    const bonusStreak = s.streak >= 5 ? 3 : s.streak >= 3 ? 2 : 1;
+    let coinsThisQ = 10 * bonusStreak * (s.doubleXp ? 2 : 1);
+    s.coins += coinsThisQ;
 
-    showFeedback(true, question.explanation);
+    if (timeMs < 5000 && currentUser) {
+      currentUser.fastAnswers = (currentUser.fastAnswers || 0) + 1;
+    }
+
+    showFeedback(true, s.streak >= 3 ? '🔥 On Fire! +' + coinsThisQ + ' coins' : '✅ Correct! +' + coinsThisQ + ' coins');
   } else {
     btn.classList.add('wrong');
-    card.classList.add('wrong-flash');
-    AppState.quiz.wrong++;
-    AppState.quiz.currentStreak = 0;
-    showFeedback(false, question.explanation, question.answer);
+    s.streak = 0;
+    s.wrong++;
+    // Highlight correct
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent === q.answer) b.classList.add('correct');
+    });
+    showFeedback(false, '❌ Wrong! Answer was: ' + q.answer);
   }
+
+  document.getElementById('quiz-coins').textContent = s.coins;
 }
 
-function showFeedback(correct, explanation, correctAnswer) {
+function showFeedback(correct, msg) {
   const panel = document.getElementById('feedback-panel');
-  const icon  = document.getElementById('feedback-icon');
-  const msg   = document.getElementById('feedback-message');
-
-  if (correct) {
-    icon.textContent = ['✅','🎉','⭐','💪','🏆'][Math.floor(Math.random()*5)];
-    msg.innerHTML = '<strong style="color:var(--green)">Correct!</strong>' + (explanation ? ' ' + explanation : '');
-    msg.style.color = 'var(--green-dark)';
-  } else {
-    icon.textContent = ['❌','😅','🤔','💭','📚'][Math.floor(Math.random()*5)];
-    msg.innerHTML = '<strong style="color:var(--red)">Not quite!</strong>' + (correctAnswer ? ' The answer is: <strong>' + correctAnswer + '</strong>' : '') + (explanation ? '. ' + explanation : '');
-    msg.style.color = 'var(--dark-gray)';
-  }
-
+  document.getElementById('feedback-icon').textContent    = correct ? '🎉' : '😬';
+  document.getElementById('feedback-message').textContent = msg;
   panel.style.display = 'flex';
 }
 
 function nextQuestion() {
-  AppState.quiz.currentIndex++;
-  renderQuestion();
-}
-
-function quitQuiz() {
-  if (confirm('Are you sure you want to quit? Your progress will be lost.')) {
-    clearInterval(AppState.timerInterval);
-    showScreen('home');
+  quizState.current++;
+  if (quizState.current >= quizState.questions.length) {
+    finishQuiz();
+  } else {
+    renderQuestion();
   }
 }
 
-function resetTimer() {
-  clearInterval(AppState.timerInterval);
-  const fill = document.getElementById('timer-fill');
-  fill.style.transition = 'none';
-  fill.style.width = '100%';
-  setTimeout(() => {
-    fill.style.transition = 'width 30s linear';
-    fill.style.width = '0%';
-  }, 50);
+function startQuestionTimer(seconds) {
+  if (seconds === 0) {
+    document.getElementById('timer-fill').style.width = '100%';
+    document.getElementById('timer-num').textContent  = '∞';
+    return;
+  }
+  let left = seconds;
+  document.getElementById('timer-fill').style.width = '100%';
+  document.getElementById('timer-num').textContent  = left;
 
-  let t = 30;
-  AppState.timerInterval = setInterval(() => {
-    t--;
-    if (t <= 0) {
-      clearInterval(AppState.timerInterval);
-      if (!AppState.quiz.answered) {
-        const card = document.getElementById('question-card');
-        card.classList.add('wrong-flash');
-        AppState.quiz.answered = true;
-        AppState.quiz.wrong++;
-        AppState.quiz.currentStreak = 0;
-        // Reveal answer
-        const current = AppState.quiz.questions[AppState.quiz.currentIndex];
-        document.querySelectorAll('.answer-btn').forEach(b => {
-          b.disabled = true;
-          if (b.textContent === current.answer) b.classList.add('reveal-correct');
-        });
-        showFeedback(false, current.explanation, current.answer);
-      }
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    left--;
+    const pct = (left / seconds) * 100;
+    document.getElementById('timer-fill').style.width = pct + '%';
+    document.getElementById('timer-num').textContent  = left;
+    if (left <= 0) {
+      clearInterval(timerInterval);
+      // Auto-answer as wrong
+      answerQuestion('__timeout__', document.createElement('button'));
     }
   }, 1000);
 }
 
-// ─── RESULTS ──────────────────────────────────
+function quitQuiz() {
+  clearInterval(timerInterval);
+  if (confirm('Are you sure you want to quit this quiz?')) {
+    challengeQuestions = null;
+    showScreen('home');
+  }
+}
+
+// ─── RESULTS ───────────────────────────────────
 function finishQuiz() {
-  clearInterval(AppState.timerInterval);
-  const q = AppState.quiz;
-  const u = AppState.user;
-  const total = q.questions.length;
-  const scorePct = Math.round((q.correct / total) * 100);
-  const grade = getGrade(scorePct);
+  clearInterval(timerInterval);
+  const s = quizState;
+  const total    = s.questions.length;
+  const pct      = Math.round((s.correct / total) * 100);
+  const { grade, title, sub } = getGrade(pct);
+  const avgTime  = s.answerTimes.length ? Math.round(s.answerTimes.reduce((a,b) => a+b, 0) / s.answerTimes.length / 1000) : 0;
 
-  // Apply powerup
-  const coins = calcCoins(q.correct, total, q.hasPowerup);
-  if (q.hasPowerup) u.activePowerup = null;
+  // Results UI
+  document.getElementById('grade-letter').textContent   = grade;
+  document.getElementById('results-title').textContent  = title;
+  document.getElementById('results-subtitle').textContent = sub;
+  document.getElementById('result-correct').textContent = s.correct;
+  document.getElementById('result-wrong').textContent   = s.wrong;
+  document.getElementById('result-score').textContent   = pct + '%';
+  document.getElementById('result-time').textContent    = avgTime + 's';
+  document.getElementById('coins-earned').textContent   = s.coins;
 
-  // Update user stats
-  u.coins += coins;
-  u.totalCoinsEarned = (u.totalCoinsEarned || 0) + coins;
-  u.totalPoints += q.correct * 5;
-  u.weeklyPoints = (u.weeklyPoints || 0) + q.correct * 5;
-  u.quizCount++;
-  if (AppState.currentSubject === 'math') u.mathQuizCount = (u.mathQuizCount || 0) + 1;
-  else u.engQuizCount = (u.engQuizCount || 0) + 1;
-  if (scorePct === 100) u.perfectCount = (u.perfectCount || 0) + 1;
-  if (scorePct > u.bestScore) u.bestScore = scorePct;
-  updateStreak();
-  checkAchievements();
-  saveUser();
-  saveLeaderboard({ id: u.id || 'guest', name: u.name, avatar: u.avatar, totalPoints: u.totalPoints, weeklyPoints: u.weeklyPoints });
-
-  // Render results
-  const gradeRing = document.getElementById('grade-ring');
-  gradeRing.className = 'grade-ring ' + grade.class;
-  document.getElementById('grade-letter').textContent   = grade.letter;
-  document.getElementById('results-title').textContent  = grade.label;
-  document.getElementById('result-correct').textContent = q.correct;
-  document.getElementById('result-wrong').textContent   = q.wrong;
-  document.getElementById('result-score').textContent   = scorePct + '%';
-  document.getElementById('coins-earned').textContent   = coins;
+  // Grade ring colour
+  const ring = document.getElementById('grade-ring');
+  ring.style.background = pct >= 90 ? 'linear-gradient(135deg,#58CC02,#1cb0f6)'
+                        : pct >= 70 ? 'linear-gradient(135deg,#1cb0f6,#ce82ff)'
+                        : pct >= 50 ? 'linear-gradient(135deg,#ff9600,#ffcc00)'
+                        : 'linear-gradient(135deg,#ff4b4b,#ff9600)';
 
   // Bonus badges
-  const badgesEl = document.getElementById('bonus-badges');
-  badgesEl.innerHTML = '';
-  if (q.hasPowerup) badgesEl.innerHTML += '<div class="bonus-badge">⚡ Double XP Applied!</div>';
-  if (scorePct === 100) badgesEl.innerHTML += '<div class="bonus-badge">🌟 Perfect Score!</div>';
-  if (q.maxStreak >= 5) badgesEl.innerHTML += '<div class="bonus-badge">🔥 ' + q.maxStreak + ' Streak Bonus!</div>';
+  const badges = [];
+  if (pct === 100)          badges.push('💯 Perfect Score!');
+  if (s.maxStreak >= 5)     badges.push('🔥 5x Streak!');
+  if (s.maxStreak >= 3)     badges.push('⚡ 3x Streak Bonus!');
+  if (s.doubleXp)           badges.push('✨ Double XP Active!');
+  if (avgTime < 8)          badges.push('⚡ Speed Demon!');
+  document.getElementById('bonus-badges').innerHTML = badges.map(b =>
+    `<span class="bonus-badge">${b}</span>`).join('');
 
+  // Question review
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = s.answers.map((a, i) => `
+    <div class="review-item ${a.isCorrect ? 'correct' : 'wrong'}">
+      <span>${a.isCorrect ? '✅' : '❌'}</span>
+      <span class="ri-q">Q${i+1}: ${a.question}</span>
+      <span class="ri-a">${a.isCorrect ? a.correct : a.selected + ' → ' + a.correct}</span>
+    </div>
+  `).join('');
+
+  // Update user stats
+  if (currentUser) {
+    currentUser.coins += s.coins;
+    currentUser.points += Math.round(pct * (s.doubleXp ? 2 : 1));
+    currentUser.totalCoinsEarned = (currentUser.totalCoinsEarned || 0) + s.coins;
+    currentUser.quizzesCompleted++;
+    if (s.subject === 'math')    currentUser.mathQuizzes++;
+    else                         currentUser.englishQuizzes++;
+    if (pct > (currentUser.bestScore || 0)) currentUser.bestScore = pct;
+    currentUser.totalScore = (currentUser.totalScore || 0) + pct;
+    if (s.maxStreak > (currentUser.maxStreak || 0)) currentUser.maxStreak = s.maxStreak;
+    if (s.doubleXp) currentUser.activePowerup = null;
+
+    currentUser.quizHistory = currentUser.quizHistory || [];
+    currentUser.quizHistory.push({
+      subject: s.subject, topic: s.topic, difficulty: s.difficulty,
+      score: pct, correct: s.correct, coins: s.coins, date: Date.now()
+    });
+
+    if (!currentUser.isGuest) {
+      checkAchievements();
+      saveUser(currentUser);
+    }
+  }
+
+  if (pct >= 70) launchConfetti();
   showScreen('results');
-  if (scorePct >= 80) launchConfetti();
+}
+
+function getGrade(pct) {
+  if (pct >= 97) return { grade:'A+', title:'Outstanding! 🌟',    sub:'You nailed every question!' };
+  if (pct >= 90) return { grade:'A',  title:'Excellent! 🎉',      sub:'Almost perfect, keep it up!' };
+  if (pct >= 80) return { grade:'B',  title:'Great Job! 👏',      sub:'Solid performance!' };
+  if (pct >= 70) return { grade:'C',  title:'Good Try! 🙂',       sub:'A bit more practice will help.' };
+  if (pct >= 60) return { grade:'D',  title:'Keep Going! 💪',     sub:'You\'re learning – keep at it!' };
+  return               { grade:'F',  title:'Don\'t Give Up! 🤔', sub:'Try again – you\'ll do better!' };
 }
 
 function replayQuiz() {
-  showQuizSetup(AppState.currentSubject);
+  showScreen('quiz-setup');
+  // Re-select the same options
+  selectSubject(quizState.subject, true);
+  setTimeout(() => {
+    const topicEl = document.querySelector(`[data-topic="${quizState.topic}"]`);
+    if (topicEl) topicEl.click();
+    const diffEl  = document.querySelector(`[data-diff="${quizState.difficulty}"]`);
+    if (diffEl)  diffEl.click();
+  }, 100);
 }
 
-// ─── SHOP ─────────────────────────────────────
+// ─── SHOP ──────────────────────────────────────
 function renderShop() {
-  document.getElementById('shop-coins').textContent = AppState.user.coins;
+  if (!currentUser) return;
+  document.getElementById('shop-coins').textContent = currentUser.coins;
+
   renderShopSection('avatars');
+  renderShopSection('themes');
+  renderShopSection('powerups');
 }
 
-function switchShopTab(tab, el) {
-  document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  ['avatars','themes','powerups'].forEach(t => {
-    document.getElementById('shop-' + t).style.display = t === tab ? 'grid' : 'none';
-  });
-  AppState.shopTab = tab;
-  renderShopSection(tab);
-}
+function renderShopSection(type) {
+  const grid = document.getElementById('shop-' + type);
+  const items = SHOP_CATALOG[type];
+  const owned = currentUser.ownedItems || [];
 
-function renderShopSection(tab) {
-  const el = document.getElementById('shop-' + tab);
-  if (!el) return;
-  const items = SHOP_CATALOG[tab];
-  const u = AppState.user;
+  grid.innerHTML = items.map(item => {
+    const isOwned    = owned.includes(item.id);
+    const isEquipped = item.type === 'avatar' ? currentUser.avatar === item.id
+                     : item.type === 'theme'  ? currentUser.theme  === item.id : false;
 
-  el.innerHTML = items.map(item => {
-    const owned    = u.inventory.includes(item.id);
-    const equipped = item.type === 'avatar' ? u.avatarId === item.id : u.equippedTheme === item.id;
-    const canAfford = u.coins >= item.price;
-    const hasPowerup = item.type === 'powerup' && u.activePowerup === item.id;
+    let badge = '';
+    if (isEquipped)   badge = '<span class="equipped-badge">✅ Equipped</span>';
+    else if (isOwned) badge = '<span class="owned-badge">✔ Owned</span>';
+    else              badge = `<span class="shop-item-price">🪙 ${item.price}</span>`;
 
-    let badge = '', cls = '', priceHtml = '';
-
-    if (equipped) { badge = '<span class="shop-item-badge badge-equipped">Equipped</span>'; cls = 'equipped'; }
-    else if (hasPowerup) { badge = '<span class="shop-item-badge badge-owned">Active</span>'; cls = 'owned'; }
-    else if (owned)  { badge = '<span class="shop-item-badge badge-owned">Owned</span>'; cls = 'owned'; }
-    else if (item.price === 0) { badge = '<span class="shop-item-badge badge-free">Free</span>'; }
-    else { cls = canAfford ? '' : 'cant-afford'; }
-
-    if (!owned && !hasPowerup) {
-      priceHtml = `<div class="shop-item-price">🪙 ${item.price}</div>`;
-    }
-
-    const desc = item.desc ? `<div style="font-size:11px;color:var(--mid-gray);text-align:center">${item.desc}</div>` : '';
-
-    return `<div class="shop-item ${cls}" onclick="handleShopPurchase('${item.id}','${tab}')">
-      <div class="shop-item-icon">${item.icon}</div>
+    return `<div class="shop-item ${isOwned ? 'owned' : ''} ${isEquipped ? 'active-item' : ''}"
+                  onclick="shopItemClick('${item.id}','${type}')">
+      <span class="shop-item-icon">${item.icon}</span>
       <div class="shop-item-name">${item.name}</div>
-      ${desc}
-      ${priceHtml}
+      <div class="shop-item-desc">${item.desc || (item.class ? 'App theme' : '')}</div>
       ${badge}
     </div>`;
   }).join('');
 }
 
-function handleShopPurchase(itemId, tab) {
-  const item = SHOP_CATALOG[tab].find(i => i.id === itemId);
+function shopItemClick(id, type) {
+  const item = SHOP_CATALOG[type].find(i => i.id === id);
   if (!item) return;
-  const u = AppState.user;
-  const owned = u.inventory.includes(itemId);
 
-  if (item.type === 'avatar') {
-    if (owned) {
-      // Equip
-      u.avatar = item.icon;
-      u.avatarId = itemId;
-      saveUser();
-      renderShopSection(tab);
-      document.getElementById('shop-coins').textContent = u.coins;
-      showToast(item.name + ' equipped! ' + item.icon, 'success');
-    } else {
-      openModal(item.icon, 'Buy ' + item.name + '?', `Costs 🪙 ${item.price} coins`, () => {
-        if (u.coins < item.price) { showToast('Not enough coins! 😅', 'error'); return; }
-        u.coins -= item.price;
-        u.inventory.push(itemId);
-        u.avatar = item.icon;
-        u.avatarId = itemId;
-        saveUser();
-        renderShopSection(tab);
-        document.getElementById('shop-coins').textContent = u.coins;
-        showToast(item.name + ' bought & equipped! ' + item.icon, 'success');
-      });
-    }
-  } else if (item.type === 'theme') {
-    if (owned) {
-      u.equippedTheme = itemId;
-      applyTheme();
-      saveUser();
-      renderShopSection(tab);
-      showToast(item.name + ' theme applied! ' + item.icon, 'success');
-    } else {
-      openModal(item.icon, 'Buy ' + item.name + ' Theme?', `Costs 🪙 ${item.price} coins`, () => {
-        if (u.coins < item.price) { showToast('Not enough coins! 😅', 'error'); return; }
-        u.coins -= item.price;
-        u.inventory.push(itemId);
-        u.equippedTheme = itemId;
-        applyTheme();
-        saveUser();
-        renderShopSection(tab);
-        document.getElementById('shop-coins').textContent = u.coins;
-        showToast(item.name + ' theme unlocked! ' + item.icon, 'success');
-      });
-    }
-  } else if (item.type === 'powerup') {
-    if (u.activePowerup === itemId) { showToast('Already active! ⚡', 'info'); return; }
-    openModal(item.icon, 'Buy ' + item.name + '?', item.desc + ` Costs 🪙 ${item.price} coins`, () => {
-      if (u.coins < item.price) { showToast('Not enough coins! 😅', 'error'); return; }
-      u.coins -= item.price;
-      u.activePowerup = itemId;
-      saveUser();
-      renderShopSection(tab);
-      document.getElementById('shop-coins').textContent = u.coins;
-      showToast(item.name + ' activated! ' + item.icon, 'success');
-    });
+  const owned = currentUser.ownedItems || [];
+  if (owned.includes(id)) {
+    equipItem(item);
+    return;
   }
+  if (currentUser.coins < item.price) {
+    showToast('Not enough coins! 🪙 Need ' + item.price);
+    return;
+  }
+  showModal('🛍️', 'Buy ' + item.name + '?',
+    'Cost: 🪙 ' + item.price + ' coins. You have 🪙 ' + currentUser.coins + ' coins.',
+    () => { buyItem(item); });
 }
 
-function applyTheme() {
-  const themeId = AppState.user.equippedTheme;
-  const theme = SHOP_CATALOG.themes.find(t => t.id === themeId);
-  document.body.className = theme ? theme.class : '';
+function buyItem(item) {
+  currentUser.coins -= item.price;
+  currentUser.ownedItems = currentUser.ownedItems || [];
+  currentUser.ownedItems.push(item.id);
+  equipItem(item, true);
+  if (!currentUser.isGuest) saveUser(currentUser);
+  renderShop();
+  showToast(item.icon + ' ' + item.name + ' purchased!');
 }
 
-// ─── MODAL ────────────────────────────────────
-let modalCallback = null;
-
-function openModal(icon, title, body, onConfirm) {
-  document.getElementById('modal-icon').textContent  = icon;
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').textContent  = body;
-  document.getElementById('modal-confirm').onclick   = () => { closeModal(); onConfirm(); };
-  document.getElementById('modal-overlay').style.display = 'flex';
+function equipItem(item, justBought) {
+  if (item.type === 'avatar') {
+    currentUser.avatar = item.id;
+    document.getElementById('hdr-avatar').textContent = item.icon;
+    document.getElementById('sidebar-avatar').textContent = item.icon;
+  }
+  if (item.type === 'theme') {
+    currentUser.theme = item.id;
+    const th = SHOP_CATALOG.themes.find(t => t.id === item.id);
+    document.body.className = th ? th.class : '';
+  }
+  if (item.type === 'powerup') {
+    currentUser.activePowerup = item.id;
+    showToast('⚡ ' + item.name + ' activated for your next quiz!');
+  }
+  if (!currentUser.isGuest) saveUser(currentUser);
+  if (!justBought) { renderShop(); showToast('✅ ' + item.name + ' equipped!'); }
 }
 
-function closeModal() {
-  document.getElementById('modal-overlay').style.display = 'none';
-}
-
-// ─── LEADERBOARD ──────────────────────────────
-function renderLeaderboard() {
-  const tab = AppState.leaderboardTab;
-  const raw = getLeaderboardData();
-
-  // Add some demo players if leaderboard is empty
-  const demoPlayers = [
-    { id:'demo1', name:'Zara',   avatar:'🦊', totalPoints:1250, weeklyPoints:320 },
-    { id:'demo2', name:'Liam',   avatar:'🦁', totalPoints:980,  weeklyPoints:280 },
-    { id:'demo3', name:'Emma',   avatar:'🐨', totalPoints:870,  weeklyPoints:210 },
-    { id:'demo4', name:'Noah',   avatar:'🐉', totalPoints:650,  weeklyPoints:180 },
-    { id:'demo5', name:'Olivia', avatar:'🐧', totalPoints:540,  weeklyPoints:150 },
-  ];
-
-  const myEntry = {
-    id: AppState.user.id || 'me',
-    name: AppState.user.name,
-    avatar: AppState.user.avatar,
-    totalPoints: AppState.user.totalPoints,
-    weeklyPoints: AppState.user.weeklyPoints || 0
-  };
-
-  const allEntries = [...demoPlayers, myEntry, ...raw.filter(e => e.id !== myEntry.id)];
-
-  const sorted = [...allEntries].sort((a, b) => {
-    return tab === 'weekly'
-      ? (b.weeklyPoints || 0) - (a.weeklyPoints || 0)
-      : (b.totalPoints || 0) - (a.totalPoints || 0);
+function switchShopTab(tab, btn) {
+  document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['avatars','themes','powerups'].forEach(t => {
+    document.getElementById('shop-' + t).style.display = t === tab ? 'grid' : 'none';
   });
+}
+
+// ─── LEADERBOARD ───────────────────────────────
+function buildAllTimeLeaderboard() {
+  const realUsers = Object.values(getAllUsers());
+  const combined = [
+    ...DEMO_USERS.map(d => ({ ...d, isDemo: true })),
+    ...realUsers.map(u => ({
+      name: u.name,
+      avatar: getAvatarIcon(u.avatar),
+      points: u.points || 0,
+      coins: u.coins || 0,
+      quizzesCompleted: u.quizzesCompleted || 0,
+      bestScore: u.bestScore || 0,
+      streak: u.streak || 0,
+      mathQuizzes: u.mathQuizzes || 0,
+      englishQuizzes: u.englishQuizzes || 0,
+      isDemo: false,
+      isReal: true,
+      email: u.email
+    }))
+  ];
+  combined.sort((a, b) => b.points - a.points);
+  return combined;
+}
+
+function renderLeaderboard(tab) {
+  let data = buildAllTimeLeaderboard();
+  if (tab === 'weekly') data = data.filter(p => !p.isDemo || Math.random() > 0.3);
+  if (tab === 'math')   data.sort((a, b) => (b.mathQuizzes || 0) - (a.mathQuizzes || 0));
+  if (tab === 'english') data.sort((a, b) => (b.englishQuizzes || 0) - (a.englishQuizzes || 0));
 
   // Podium (top 3)
   const podium = document.getElementById('leaderboard-podium');
-  const top3 = sorted.slice(0, 3);
-  const pos = ['second','first','third'];
-  const reorder = [top3[1], top3[0], top3[2]].filter(Boolean);
-
-  podium.innerHTML = reorder.map((p, i) => {
-    const rank = p === top3[0] ? 1 : p === top3[1] ? 2 : 3;
-    const cls  = pos[rank - 1];
-    const pts  = tab === 'weekly' ? (p.weeklyPoints || 0) : (p.totalPoints || 0);
-    return `<div class="podium-item ${cls}">
+  const top3   = data.slice(0, 3);
+  const order  = [1, 0, 2]; // display: 2nd, 1st, 3rd
+  podium.innerHTML = order.map(i => {
+    const p = top3[i];
+    if (!p) return '';
+    const place = i + 1;
+    const medal = ['🥇','🥈','🥉'][i];
+    return `<div class="podium-place place-${place}">
       <div class="podium-avatar">${p.avatar}</div>
       <div class="podium-name">${p.name}</div>
-      <div class="podium-pts">${pts} pts</div>
-      <div class="podium-stand">${rank}</div>
+      <div class="podium-pts">${p.points} pts</div>
+      <div class="podium-bar"><span class="podium-rank">${medal}</span></div>
     </div>`;
   }).join('');
 
-  // List (4+)
-  const list = document.getElementById('leaderboard-list');
-  list.innerHTML = sorted.slice(3).map((p, i) => {
-    const rank = i + 4;
-    const pts  = tab === 'weekly' ? (p.weeklyPoints || 0) : (p.totalPoints || 0);
-    const isMe = p.id === (AppState.user.id || 'me') || p.name === AppState.user.name;
-    return `<div class="lb-entry ${isMe ? 'is-me' : ''}">
-      <span class="lb-rank">${rank}</span>
-      <span class="lb-avatar">${p.avatar}</span>
-      <div class="lb-info">
-        <div class="lb-name">${p.name}${isMe ? ' (You)' : ''}</div>
-        <div class="lb-sub">${getRank(p.totalPoints)}</div>
-      </div>
-      <span class="lb-points">${pts}</span>
-    </div>`;
+  // Table (all)
+  const tbody = document.getElementById('leaderboard-table-body');
+  tbody.innerHTML = data.map((p, i) => {
+    const isMe = currentUser && p.name === currentUser.name;
+    const medal = i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1);
+    return `<tr class="${isMe ? 'me' : ''}">
+      <td class="lb-row-rank">${medal}</td>
+      <td><div class="lb-row-player"><span class="lb-row-avatar">${p.avatar}</span>${p.name}${isMe ? ' <strong>(You)</strong>' : ''}</div></td>
+      <td>${p.quizzesCompleted}</td>
+      <td class="lb-row-score">${p.bestScore}%</td>
+      <td class="lb-row-pts">${p.points}</td>
+      <td class="lb-row-streak">${p.streak > 0 ? '🔥 ' + p.streak : '—'}</td>
+    </tr>`;
   }).join('');
+
+  // My rank
+  const myIdx = currentUser ? data.findIndex(p => p.name === currentUser.name) : -1;
+  document.getElementById('my-rank-num').textContent  = myIdx >= 0 ? '#' + (myIdx + 1) : '#—';
+  document.getElementById('my-rank-name').textContent = currentUser ? currentUser.name : '—';
+  document.getElementById('my-rank-pts').textContent  = currentUser ? currentUser.points + ' points' : '0 points';
+
+  // Online players (simulated)
+  renderOnlinePlayers(data);
+
+  // Sync challenge code
+  const code = document.getElementById('challenge-code');
+  if (code.textContent.includes('—')) {
+    code.textContent = '— — — —';
+  }
 }
 
-function switchLbTab(tab, el) {
+function renderOnlinePlayers(data) {
+  const el = document.getElementById('online-players');
+  const online = data.slice(0, 6).map(p => `
+    <div class="online-player-item">
+      <span class="online-dot"></span>
+      <span class="online-name">${p.avatar} ${p.name}</span>
+      <span class="online-pts">${p.points} pts</span>
+    </div>`).join('');
+  el.innerHTML = online || '<p class="empty-state">No players online</p>';
+}
+
+function switchLbTab(tab, btn) {
   document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  AppState.leaderboardTab = tab;
-  renderLeaderboard();
+  if (btn) btn.classList.add('active');
+  renderLeaderboard(tab);
 }
 
+// ─── CHALLENGE SYSTEM ──────────────────────────
 function generateChallengeCode() {
+  if (!currentSubject || !currentDiff) {
+    currentSubject = 'math';
+    currentTopic   = 'mixed-math';
+    currentDiff    = 'medium';
+  }
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  document.getElementById('challenge-code').textContent = code;
-  localStorage.setItem('abhiquest_challenge_' + code, JSON.stringify({
-    creator: AppState.user.name,
-    subject: AppState.currentSubject || 'math',
-    topic: AppState.currentTopic || 'mixed-math',
-    difficulty: AppState.currentDifficulty || 'medium',
-    score: AppState.user.bestScore,
-    ts: Date.now()
-  }));
-  showToast('Challenge code generated! Share it with friends! 🎉', 'success');
+  const challengeData = {
+    code,
+    subject: currentSubject,
+    topic: currentTopic || 'mixed-math',
+    difficulty: currentDiff || 'medium',
+    createdBy: currentUser ? currentUser.name : 'Guest',
+    questions: generateQuestions(currentSubject, currentTopic || 'mixed-math', currentDiff || 'medium', 20),
+    timestamp: Date.now()
+  };
+  localStorage.setItem('radtquest_challenge_' + code, JSON.stringify(challengeData));
+
+  // Show in both places
+  ['challenge-code', 'challenge-code-sidebar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = code;
+  });
+
+  if (currentUser) { currentUser.usedChallenge = true; if (!currentUser.isGuest) saveUser(currentUser); }
+  showToast('🎯 Challenge code: ' + code + ' – Share it!');
+  return code;
 }
 
 function joinChallenge() {
-  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
-  if (!code || code.length < 4) { showToast('Enter a valid code!', 'error'); return; }
+  joinChallengeWithCode(document.getElementById('join-code-input').value.trim().toUpperCase());
+}
+function joinChallengeFromSidebar() {
+  joinChallengeWithCode(document.getElementById('join-code-sidebar').value.trim().toUpperCase());
+}
+function joinChallengeWithCode(code) {
+  if (!code || code.length < 4) { showToast('Enter a valid challenge code!'); return; }
 
-  const data = localStorage.getItem('abhiquest_challenge_' + code);
-  if (!data) {
-    showToast('Code not found. Ask your friend to generate one! 🤔', 'error');
-    return;
+  const raw = localStorage.getItem('radtquest_challenge_' + code);
+  if (!raw) { showToast('Code not found. Ask your friend to generate a new one!'); return; }
+
+  const data = JSON.parse(raw);
+  // Check not expired (24h)
+  if (Date.now() - data.timestamp > 86400000) {
+    showToast('This challenge has expired!'); return;
   }
 
-  const challenge = JSON.parse(data);
-  showToast('Challenge accepted! Beat ' + challenge.creator + '\'s score of ' + challenge.score + '%! 🎯', 'info');
-  AppState.currentSubject = challenge.subject;
-  AppState.currentTopic   = challenge.topic;
-  AppState.currentDifficulty = challenge.difficulty;
-  setTimeout(() => startQuiz(), 1000);
+  currentSubject = data.subject;
+  currentTopic   = data.topic;
+  currentDiff    = data.difficulty;
+  challengeQuestions = data.questions;
+
+  if (currentUser) { currentUser.usedChallenge = true; if (!currentUser.isGuest) saveUser(currentUser); }
+  showToast('🎯 Joined ' + data.createdBy + "'s challenge!");
+  startQuiz();
 }
 
-// ─── PROFILE ──────────────────────────────────
+// ─── PROFILE ───────────────────────────────────
 function renderProfile() {
-  const u = AppState.user;
-  document.getElementById('profile-avatar').textContent     = u.avatar;
-  document.getElementById('profile-name').textContent       = u.name;
-  document.getElementById('profile-email').textContent      = u.isGuest ? '(Playing as Guest)' : u.email;
-  document.getElementById('profile-rank').textContent       = getRank(u.totalPoints);
-  document.getElementById('profile-total-points').textContent = u.totalPoints;
-  document.getElementById('profile-coins').textContent      = u.coins;
-  document.getElementById('profile-quizzes').textContent    = u.quizCount;
-  document.getElementById('profile-streak').textContent     = u.streak;
+  if (!currentUser) return;
+  const u = currentUser;
+  const avatar = getAvatarIcon(u.avatar);
+  const rank   = getRank(u.points);
+  const avg    = u.quizzesCompleted > 0 ? Math.round((u.totalScore || 0) / u.quizzesCompleted) : 0;
+
+  document.getElementById('profile-avatar').textContent        = avatar;
+  document.getElementById('profile-name').textContent          = u.name;
+  document.getElementById('profile-email').textContent         = u.isGuest ? 'Guest Account' : u.email;
+  document.getElementById('profile-rank').textContent          = rank;
+  document.getElementById('profile-total-points').textContent  = u.points;
+  document.getElementById('profile-coins').textContent         = u.coins;
+  document.getElementById('profile-quizzes').textContent       = u.quizzesCompleted;
+  document.getElementById('profile-streak').textContent        = u.streak || 0;
+  document.getElementById('profile-best-score').textContent    = (u.bestScore || 0) + '%';
+  document.getElementById('profile-avg-score').textContent     = avg + '%';
 
   // Achievements
   const grid = document.getElementById('achievements-grid');
-  grid.innerHTML = ACHIEVEMENTS_LIST.map(a => {
+  grid.innerHTML = ACHIEVEMENTS.map(a => {
     const unlocked = a.check(u);
-    return `<div class="achievement-card ${unlocked ? 'unlocked' : 'locked'}" title="${a.desc}">
-      <div class="achievement-icon">${a.icon}</div>
-      <div class="achievement-name">${a.name}</div>
+    return `<div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
+      <span class="ach-icon">${a.icon}</span>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-desc">${a.desc}</div>
     </div>`;
   }).join('');
+
+  // Quiz history
+  const hist = (u.quizHistory || []).slice().reverse();
+  const histEl = document.getElementById('quiz-history-list');
+  if (!hist.length) {
+    histEl.innerHTML = '<p class="empty-state">No quiz history yet.</p>';
+  } else {
+    histEl.innerHTML = hist.map(h => {
+      const g = h.score >= 90 ? 'a' : h.score >= 70 ? 'b' : h.score >= 50 ? 'c' : 'f';
+      const ico = h.subject === 'math' ? '🧮' : '📖';
+      return `<div class="qh-item">
+        <span class="qh-icon">${ico}</span>
+        <div class="qh-info">
+          <div class="qh-title">${cap(h.topic)} – ${cap(h.difficulty)}</div>
+          <div class="qh-meta">${new Date(h.date).toLocaleDateString()} · ${h.correct}/20 correct</div>
+        </div>
+        <span class="qh-score ${g}">${h.score}%</span>
+      </div>`;
+    }).join('');
+  }
 }
 
+// ─── ACHIEVEMENTS ──────────────────────────────
 function checkAchievements() {
-  const u = AppState.user;
-  const prev = u.achievements || [];
-  ACHIEVEMENTS_LIST.forEach(a => {
-    if (!prev.includes(a.id) && a.check(u)) {
-      prev.push(a.id);
-      setTimeout(() => showToast('🏅 Achievement Unlocked: ' + a.name + '!', 'success'), 500);
+  if (!currentUser) return;
+  ACHIEVEMENTS.forEach(a => {
+    const key = 'ach_notified_' + a.id;
+    if (!currentUser[key] && a.check(currentUser)) {
+      currentUser[key] = true;
+      setTimeout(() => showToast(a.icon + ' Achievement unlocked: ' + a.name + '!'), 1200);
     }
   });
-  u.achievements = prev;
 }
 
-// ─── CONFETTI ─────────────────────────────────
-function launchConfetti() {
-  const container = document.getElementById('confetti-container');
-  container.innerHTML = '';
-  const colors = ['#58CC02','#1cb0f6','#FFD700','#ff9600','#ce82ff','#ff4b4b'];
-
-  for (let i = 0; i < 80; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'confetti-piece';
-    piece.style.cssText = `
-      left: ${Math.random() * 100}%;
-      background: ${colors[Math.floor(Math.random() * colors.length)]};
-      width: ${Math.random() * 10 + 5}px;
-      height: ${Math.random() * 10 + 5}px;
-      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-      animation-duration: ${Math.random() * 2 + 1.5}s;
-      animation-delay: ${Math.random() * 0.5}s;
-    `;
-    container.appendChild(piece);
-  }
-
-  setTimeout(() => { container.innerHTML = ''; }, 4000);
+// ─── HELPERS ───────────────────────────────────
+function getAvatarIcon(id) {
+  const item = [...SHOP_CATALOG.avatars].find(a => a.id === id);
+  return item ? item.icon : '🐶';
 }
 
-// ─── TOAST ────────────────────────────────────
+function getRank(points) {
+  if (points >= 5000) return '🏆 Legend';
+  if (points >= 2000) return '💎 Diamond';
+  if (points >= 1000) return '🥇 Gold';
+  if (points >= 500)  return '🥈 Silver';
+  if (points >= 200)  return '🥉 Bronze';
+  return '🎓 Beginner';
+}
+
+function cap(s) {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ');
+}
+
+// ─── MODAL ─────────────────────────────────────
+let pendingModalCb = null;
+function showModal(icon, title, body, onConfirm) {
+  document.getElementById('modal-icon').textContent  = icon;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent  = body;
+  pendingModalCb = onConfirm;
+  document.getElementById('modal-confirm').onclick   = () => { closeModal(); if (pendingModalCb) pendingModalCb(); };
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  pendingModalCb = null;
+}
+
+// ─── TOAST ─────────────────────────────────────
 let toastTimer = null;
-
-function showToast(msg, type = '') {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.className = 'toast ' + (type || '');
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
   clearTimeout(toastTimer);
-  // Force reflow
-  void toast.offsetHeight;
-  toast.classList.add('show');
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ─── INIT ─────────────────────────────────────
-(function init() {
-  loadUser();
-  applyTheme();
-
-  // If user was logged in before, go to home
-  if (AppState.user.name !== 'Player' || AppState.user.quizCount > 0) {
-    postLogin();
+// ─── CONFETTI ──────────────────────────────────
+function launchConfetti() {
+  const cont = document.getElementById('confetti-container');
+  const colors = ['#58CC02','#1cb0f6','#ce82ff','#ff9600','#FFD700','#ff4b4b'];
+  cont.innerHTML = '';
+  for (let i = 0; i < 80; i++) {
+    const c  = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left     = Math.random() * 100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDuration  = (Math.random() * 2 + 1.5) + 's';
+    c.style.animationDelay     = (Math.random() * 0.8) + 's';
+    c.style.width  = (Math.random() * 10 + 6)  + 'px';
+    c.style.height = (Math.random() * 10 + 6)  + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    cont.appendChild(c);
   }
-})();
+  setTimeout(() => { if (cont) cont.innerHTML = ''; }, 5000);
+}
+
+// ─── QUESTION GENERATOR (wrapper) ──────────────
+function generateOneQuestion(subj, topic, diff) {
+  if (subj === 'math') {
+    if (topic === 'addition')       return genAddition(diff);
+    if (topic === 'subtraction')    return genSubtraction(diff);
+    if (topic === 'multiplication') return genMultiplication(diff);
+    if (topic === 'division')       return genDivision(diff);
+    if (topic === 'mixed-math') {
+      const fns = [genAddition, genSubtraction, genMultiplication, genDivision, genWordProblem];
+      return fns[Math.floor(Math.random() * fns.length)](diff);
+    }
+  } else {
+    if (topic === 'spelling')       return genSpelling(diff);
+    if (topic === 'vocabulary')     return genVocabulary(diff);
+    if (topic === 'grammar')        return genGrammar(diff);
+    if (topic === 'mixed-english') {
+      const fns = [genSpelling, genVocabulary, genGrammar];
+      return fns[Math.floor(Math.random() * fns.length)](diff);
+    }
+  }
+  return genAddition(diff);
+}
+
+// ─── BOOT ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Restore session
+  const savedEmail = getSavedSession();
+  if (savedEmail) {
+    const user = getUser(savedEmail);
+    if (user) {
+      currentUser = user;
+      updateDayStreak();
+      showScreen('home');
+      return;
+    }
+  }
+  showScreen('landing');
+});
