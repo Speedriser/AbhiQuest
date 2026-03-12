@@ -160,58 +160,103 @@
           </div>
 
           <div class="wb-builder-card">
+
             <!-- Step 1: Subject -->
             <div class="wb-step">
               <div class="wb-step-label"><span class="wb-step-num">1</span> Choose Subject</div>
               <div class="wb-subj-row">
                 <button class="wb-subj-btn math" onclick="wbSelectSubject('math', this)">
-                  <span class="wb-subj-icon">🧮</span>
+                  <span class="wb-subj-icon">&#129518;</span>
                   <span class="wb-subj-name">Mathematics</span>
-                  <span class="wb-subj-sub">Addition · Subtraction · Multiplication · Division · Word Problems</span>
+                  <span class="wb-subj-sub">Addition &middot; Subtraction &middot; Multiplication &middot; Division &middot; Word Problems</span>
                 </button>
                 <button class="wb-subj-btn english" onclick="wbSelectSubject('english', this)">
-                  <span class="wb-subj-icon">📖</span>
+                  <span class="wb-subj-icon">&#128218;</span>
                   <span class="wb-subj-name">English</span>
-                  <span class="wb-subj-sub">Spelling · Vocabulary · Grammar · Literary Techniques</span>
+                  <span class="wb-subj-sub">Spelling &middot; Vocabulary &middot; Grammar &middot; Literary Techniques</span>
                 </button>
               </div>
             </div>
 
-            <!-- Step 2: Grade -->
-            <div class="wb-step">
-              <div class="wb-step-label"><span class="wb-step-num">2</span> Choose Grade</div>
-              <div class="wb-grade-row">
-                <button class="wb-grade-btn" onclick="wbSelectGrade('1', this)"><span class="wb-g-num">1</span><span class="wb-g-age">Age 5–6</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('2', this)"><span class="wb-g-num">2</span><span class="wb-g-age">Age 6–7</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('3', this)"><span class="wb-g-num">3</span><span class="wb-g-age">Age 7–8</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('4', this)"><span class="wb-g-num">4</span><span class="wb-g-age">Age 8–9</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('5', this)"><span class="wb-g-num">5</span><span class="wb-g-age">Age 9–10</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('6', this)"><span class="wb-g-num">6</span><span class="wb-g-age">Age 10–11</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('7', this)"><span class="wb-g-num">7</span><span class="wb-g-age">Age 11–12</span></button>
-                <button class="wb-grade-btn" onclick="wbSelectGrade('8', this)"><span class="wb-g-num">8</span><span class="wb-g-age">Age 12–13</span></button>
+            <!-- Step 2: Topic (revealed after subject chosen) -->
+            <div class="wb-step wb-reveal-step" id="wb-topic-step" style="display:none">
+              <div class="wb-step-label"><span class="wb-step-num">2</span> Choose Topic</div>
+
+              <!-- Maths topics -->
+              <div class="wb-topic-row" id="wb-math-topics" style="display:none">
+                <button class="wb-topic-btn" onclick="wbSelectTopic('mixed-math', this)">
+                  <span class="wb-topic-icon">&#128256;</span><span>All Mixed</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('addition', this)">
+                  <span class="wb-topic-icon">&#10133;</span><span>Addition</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('subtraction', this)">
+                  <span class="wb-topic-icon">&#10134;</span><span>Subtraction</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('multiplication', this)">
+                  <span class="wb-topic-icon">&#10005;</span><span>Multiplication</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('division', this)">
+                  <span class="wb-topic-icon">&#247;</span><span>Division</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('word-problems', this)">
+                  <span class="wb-topic-icon">&#128221;</span><span>Word Problems</span>
+                </button>
+              </div>
+
+              <!-- English topics -->
+              <div class="wb-topic-row" id="wb-english-topics" style="display:none">
+                <button class="wb-topic-btn" onclick="wbSelectTopic('mixed-english', this)">
+                  <span class="wb-topic-icon">&#128256;</span><span>All Mixed</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('spelling', this)">
+                  <span class="wb-topic-icon">&#9997;&#65039;</span><span>Spelling</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('vocabulary', this)">
+                  <span class="wb-topic-icon">&#128218;</span><span>Vocabulary</span>
+                </button>
+                <button class="wb-topic-btn" onclick="wbSelectTopic('grammar', this)">
+                  <span class="wb-topic-icon">&#128196;</span><span>Grammar</span>
+                </button>
               </div>
             </div>
 
-            <!-- Step 3: Download -->
-            <div class="wb-step wb-step-download">
-              <div class="wb-step-label"><span class="wb-step-num">3</span> Download &amp; Print</div>
+            <!-- Step 3: Grade (revealed after topic chosen) -->
+            <div class="wb-step wb-reveal-step" id="wb-grade-step" style="display:none">
+              <div class="wb-step-label"><span class="wb-step-num">3</span> Choose Grade</div>
+              <div class="wb-grade-row">
+                <button class="wb-grade-btn" onclick="wbSelectGrade('1', this)"><span class="wb-g-num">1</span><span class="wb-g-age">Age 5&ndash;6</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('2', this)"><span class="wb-g-num">2</span><span class="wb-g-age">Age 6&ndash;7</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('3', this)"><span class="wb-g-num">3</span><span class="wb-g-age">Age 7&ndash;8</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('4', this)"><span class="wb-g-num">4</span><span class="wb-g-age">Age 8&ndash;9</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('5', this)"><span class="wb-g-num">5</span><span class="wb-g-age">Age 9&ndash;10</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('6', this)"><span class="wb-g-num">6</span><span class="wb-g-age">Age 10&ndash;11</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('7', this)"><span class="wb-g-num">7</span><span class="wb-g-age">Age 11&ndash;12</span></button>
+                <button class="wb-grade-btn" onclick="wbSelectGrade('8', this)"><span class="wb-g-num">8</span><span class="wb-g-age">Age 12&ndash;13</span></button>
+              </div>
+            </div>
+
+            <!-- Step 4: Download (revealed after grade chosen) -->
+            <div class="wb-step wb-step-download wb-reveal-step" id="wb-download-step" style="display:none">
+              <div class="wb-step-label"><span class="wb-step-num">4</span> Download &amp; Print</div>
               <button id="wb-download-btn" class="btn wb-download-btn" disabled onclick="wbDownload()">
-                <i class="fas fa-file-pdf"></i> Choose Subject &amp; Grade to Download
+                <i class="fas fa-file-pdf"></i> Choose Subject, Topic &amp; Grade to Download
               </button>
               <p class="wb-dl-note">
-                <i class="fas fa-lock"></i> No sign-up needed &nbsp;·&nbsp;
-                <i class="fas fa-random"></i> Random questions every download &nbsp;·&nbsp;
+                <i class="fas fa-lock"></i> No sign-up needed &nbsp;&middot;&nbsp;
+                <i class="fas fa-random"></i> Random questions every download &nbsp;&middot;&nbsp;
                 <i class="fas fa-check-double"></i> Answer key included
               </p>
             </div>
-          </div>
+
+          </div><!-- /wb-builder-card -->
 
           <!-- Feature pills -->
           <div class="wb-features-row">
-            <div class="wb-feat"><span>📐</span> UK National Curriculum &amp; US Common Core aligned</div>
-            <div class="wb-feat"><span>🖨️</span> Print-ready A4 PDF layout</div>
-            <div class="wb-feat"><span>🎲</span> Fresh random questions each time</div>
-            <div class="wb-feat"><span>🔑</span> Full answer key on final page</div>
+            <div class="wb-feat"><span>&#128208;</span> UK National Curriculum &amp; US Common Core aligned</div>
+            <div class="wb-feat"><span>&#128424;&#65039;</span> Print-ready A4 PDF layout</div>
+            <div class="wb-feat"><span>&#127922;</span> Fresh random questions each time</div>
+            <div class="wb-feat"><span>&#128273;</span> Full answer key on final page</div>
           </div>
         </div>
       </section>

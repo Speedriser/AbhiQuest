@@ -1343,6 +1343,50 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
 }
 .wb-feat span { font-size: 22px; flex-shrink: 0; }
 
+/* Reveal animation for progressive disclosure */
+.wb-reveal-step {
+  animation: wb-slide-in 0.28s ease;
+}
+@keyframes wb-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Topic buttons */
+.wb-topic-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.wb-topic-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: 2.5px solid var(--border);
+  border-radius: 50px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  font-family: 'Nunito', sans-serif;
+}
+.wb-topic-btn:hover {
+  border-color: var(--purple);
+  background: var(--purple-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.wb-topic-btn.active {
+  border-color: var(--green);
+  background: var(--green-light);
+  box-shadow: 0 0 0 3px rgba(88,204,2,.18);
+}
+.wb-topic-icon { font-size: 17px; line-height: 1; }
+
 /* Responsive */
 @media (max-width: 768px) {
   .wb-builder-card   { padding: 24px 20px; }
@@ -1350,9 +1394,11 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
   .wb-grade-row      { grid-template-columns: repeat(4, 1fr); }
   .wb-features-row   { grid-template-columns: repeat(2, 1fr); }
   .landing-nav-links { display: none; }
+  .wb-topic-btn      { font-size: 13px; padding: 9px 14px; }
 }
 @media (max-width: 480px) {
   .wb-grade-row      { grid-template-columns: repeat(4, 1fr); }
   .wb-features-row   { grid-template-columns: 1fr 1fr; }
   .wb-download-btn   { font-size: 14px; padding: 14px 20px; }
+  .wb-topic-btn      { font-size: 12px; padding: 8px 11px; }
 }
