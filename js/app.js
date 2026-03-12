@@ -130,7 +130,7 @@ function showScreen(name) {
   const loggedIn = !!currentUser;
   const hdr = document.getElementById('site-header');
   if (hdr) {
-    if (loggedIn && name !== 'landing' && name !== 'auth') {
+    if (loggedIn && name !== 'landing' && name !== 'auth' && name !== 'admin') {
       hdr.classList.remove('hidden');
     } else {
       hdr.classList.add('hidden');
@@ -142,6 +142,7 @@ function showScreen(name) {
   if (name === 'leaderboard') renderLeaderboard('all-time');
   if (name === 'profile')     renderProfile();
   if (name === 'results')     {} // populated by finishQuiz()
+  if (name === 'admin')       { renderAdminOverview(); renderAdminUsers(); renderAdminActivity(); switchAdminTab('overview'); }
 }
 
 // ─── AUTH ──────────────────────────────────────
@@ -1076,6 +1077,266 @@ function generateOneQuestion(subj, topic, grade) {
     }
   }
   return genAddition(grade);
+}
+
+// ─── ADMIN PANEL ───────────────────────────────
+const ADMIN_KEY = 'radtquest_admin';
+
+function getAdminCreds() {
+  const stored = localStorage.getItem(ADMIN_KEY);
+  if (stored) { try { return JSON.parse(stored); } catch(e) {} }
+  return { username: 'admin', password: 'admin' };
+}
+
+function saveAdminCreds(creds) {
+  localStorage.setItem(ADMIN_KEY, JSON.stringify(creds));
+}
+
+function showAdminLogin() {
+  const modal = document.getElementById('admin-login-modal');
+  modal.style.display = 'flex';
+  document.getElementById('admin-username-input').value = '';
+  document.getElementById('admin-password-input').value = '';
+  document.getElementById('admin-login-error').style.display = 'none';
+  setTimeout(() => document.getElementById('admin-username-input').focus(), 100);
+}
+
+function closeAdminLogin() {
+  document.getElementById('admin-login-modal').style.display = 'none';
+}
+
+function handleAdminLogin() {
+  const creds    = getAdminCreds();
+  const username = document.getElementById('admin-username-input').value.trim();
+  const password = document.getElementById('admin-password-input').value;
+  const errEl    = document.getElementById('admin-login-error');
+  if (username !== creds.username || password !== creds.password) {
+    errEl.textContent   = 'Invalid username or password.';
+    errEl.style.display = 'block';
+    return;
+  }
+  closeAdminLogin();
+  showScreen('admin');
+}
+
+function adminLogout() {
+  showScreen('landing');
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+  const tabEl = document.getElementById('admin-tab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  const navEl = document.getElementById('anav-' + tab);
+  if (navEl) navEl.classList.add('active');
+
+  // Lazy-render on first visit to each tab
+  if (tab === 'users')    renderAdminUsers();
+  if (tab === 'activity') renderAdminActivity();
+  if (tab === 'overview') renderAdminOverview();
+}
+
+function renderAdminOverview() {
+  const allUsers    = Object.values(getAllUsers()).filter(u => !u.isGuest);
+  const totalQuizzes = allUsers.reduce((s, u) => s + (u.quizzesCompleted || 0), 0);
+  const scored       = allUsers.filter(u => u.quizzesCompleted > 0).map(u => u.bestScore || 0);
+  const avgScore     = scored.length ? Math.round(scored.reduce((a,b) => a+b, 0) / scored.length) : 0;
+  const topPlayer    = [...allUsers].sort((a,b) => (b.points||0) - (a.points||0))[0];
+  const totalMath    = allUsers.reduce((s,u) => s + (u.mathQuizzes    || 0), 0);
+  const totalEng     = allUsers.reduce((s,u) => s + (u.englishQuizzes || 0), 0);
+  const totalPts     = totalMath + totalEng;
+
+  // Stat cards
+  const statsGrid = document.getElementById('admin-stats-grid');
+  if (!statsGrid) return;
+  statsGrid.innerHTML = [
+    { icon:'fas fa-users',  label:'Total Users',    value: allUsers.length,                        color:'#1cb0f6' },
+    { icon:'fas fa-tasks',  label:'Total Quizzes',  value: totalQuizzes,                           color:'#58CC02' },
+    { icon:'fas fa-trophy', label:'Top Player',     value: topPlayer ? topPlayer.name : '—',       color:'#FFD700' },
+    { icon:'fas fa-star',   label:'Avg Best Score', value: avgScore + '%',                         color:'#ce82ff' },
+  ].map(s => `<div class="admin-stat-card">
+    <div class="admin-stat-icon" style="color:${s.color}"><i class="${s.icon}"></i></div>
+    <div class="admin-stat-value">${s.value}</div>
+    <div class="admin-stat-label">${s.label}</div>
+  </div>`).join('');
+
+  // Subject breakdown
+  const sbEl = document.getElementById('admin-subject-breakdown');
+  if (sbEl) {
+    const mp = totalPts > 0 ? Math.round(totalMath / totalPts * 100) : 0;
+    const ep = totalPts > 0 ? Math.round(totalEng  / totalPts * 100) : 0;
+    sbEl.innerHTML = `
+      <div class="admin-subject-bar">
+        <div class="asb-label"><span>&#129518; Maths</span><span>${totalMath} quizzes</span></div>
+        <div class="asb-track"><div class="asb-fill math" style="width:${mp}%"></div></div>
+      </div>
+      <div class="admin-subject-bar">
+        <div class="asb-label"><span>&#128214; English</span><span>${totalEng} quizzes</span></div>
+        <div class="asb-track"><div class="asb-fill eng" style="width:${ep}%"></div></div>
+      </div>`;
+  }
+
+  // Recent activity (latest 8 sessions across all users)
+  const allHistory = [];
+  allUsers.forEach(u => (u.quizHistory||[]).forEach(h => allHistory.push({...h, userName: u.name})));
+  allHistory.sort((a,b) => b.date - a.date);
+  const raEl = document.getElementById('admin-recent-activity');
+  if (raEl) {
+    if (!allHistory.length) {
+      raEl.innerHTML = '<p class="empty-state">No quiz activity yet.</p>';
+    } else {
+      raEl.innerHTML = allHistory.slice(0, 8).map(h => {
+        const cls = h.score >= 80 ? 'good' : h.score >= 50 ? 'ok' : 'bad';
+        const ico = h.subject === 'math' ? '&#129518;' : '&#128214;';
+        return `<div class="admin-activity-item">
+          <span class="aai-icon">${ico}</span>
+          <div class="aai-info">
+            <div class="aai-name">${h.userName}</div>
+            <div class="aai-meta">${cap(h.topic)} &middot; Grade ${h.difficulty || h.grade || '?'}</div>
+          </div>
+          <span class="aai-score ${cls}">${h.score}%</span>
+          <span class="aai-date">${new Date(h.date).toLocaleDateString()}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+function renderAdminUsers() {
+  const allUsers = Object.values(getAllUsers()).filter(u => !u.isGuest);
+  const countEl = document.getElementById('admin-user-count');
+  if (countEl) countEl.textContent = allUsers.length + ' user' + (allUsers.length !== 1 ? 's' : '');
+  _renderAdminUsersTable(allUsers);
+}
+
+function _renderAdminUsersTable(users) {
+  const tbody = document.getElementById('admin-users-table-body');
+  if (!tbody) return;
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#9ca3af;">No users found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => {
+    const avatar = getAvatarIcon(u.avatar);
+    const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—';
+    return `<tr>
+      <td><div class="admin-user-cell"><span class="admin-user-avatar">${avatar}</span><strong>${u.name}</strong></div></td>
+      <td style="font-size:13px;color:#6b7280">${u.email}</td>
+      <td>${u.quizzesCompleted || 0}</td>
+      <td>${u.bestScore || 0}%</td>
+      <td>${u.points || 0}</td>
+      <td>${u.coins || 0}</td>
+      <td style="font-size:12px">${joined}</td>
+      <td><button class="admin-delete-btn" onclick="deleteUserAsAdmin('${u.email.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAdminUsers() {
+  const query    = (document.getElementById('admin-user-search').value || '').toLowerCase().trim();
+  const allUsers = Object.values(getAllUsers()).filter(u => !u.isGuest);
+  const filtered = query
+    ? allUsers.filter(u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query))
+    : allUsers;
+  _renderAdminUsersTable(filtered);
+}
+
+function deleteUserAsAdmin(email) {
+  const allUsers = getAllUsers();
+  const user = allUsers[email.toLowerCase()];
+  if (!user) return;
+  showModal('&#128465;', 'Delete User?',
+    'Permanently delete ' + user.name + "'s account. This cannot be undone.",
+    () => {
+      const updated = getAllUsers();
+      delete updated[email.toLowerCase()];
+      saveAllUsers(updated);
+      renderAdminUsers();
+      showToast('Deleted: ' + user.name);
+    });
+}
+
+function renderAdminActivity() {
+  const allUsers   = Object.values(getAllUsers()).filter(u => !u.isGuest);
+  const allHistory = [];
+  allUsers.forEach(u => (u.quizHistory||[]).forEach(h => allHistory.push({...h, userName: u.name})));
+  allHistory.sort((a,b) => b.date - a.date);
+
+  const logEl = document.getElementById('admin-activity-log');
+  if (!logEl) return;
+  if (!allHistory.length) {
+    logEl.innerHTML = '<p class="empty-state">No quiz activity yet.</p>';
+    return;
+  }
+  logEl.innerHTML = `<table class="admin-table">
+    <thead><tr>
+      <th>User</th><th>Subject</th><th>Topic</th><th>Grade</th>
+      <th>Score</th><th>Correct</th><th>Coins</th><th>Date</th>
+    </tr></thead>
+    <tbody>${allHistory.map(h => {
+      const cls = h.score >= 80 ? 'good' : h.score >= 50 ? 'ok' : 'bad';
+      return `<tr>
+        <td><strong>${h.userName}</strong></td>
+        <td>${h.subject === 'math' ? '&#129518; Maths' : '&#128214; English'}</td>
+        <td>${cap(h.topic)}</td>
+        <td>Grade ${h.difficulty || h.grade || '?'}</td>
+        <td><span class="aai-score ${cls}">${h.score}%</span></td>
+        <td>${h.correct || '?'}/20</td>
+        <td>&#129689; ${h.coins || 0}</td>
+        <td style="font-size:12px;white-space:nowrap">${new Date(h.date).toLocaleDateString()}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function changeAdminPassword() {
+  const curPwd  = document.getElementById('admin-cur-pwd').value;
+  const newPwd  = document.getElementById('admin-new-pwd').value;
+  const confPwd = document.getElementById('admin-confirm-pwd').value;
+  const msgEl   = document.getElementById('admin-pwd-msg');
+  const creds   = getAdminCreds();
+
+  function pwdMsg(txt, ok) {
+    msgEl.textContent   = txt;
+    msgEl.style.color   = ok ? '#58CC02' : '#ff4b4b';
+    msgEl.style.display = 'block';
+  }
+
+  if (curPwd !== creds.password) return pwdMsg('Current password is incorrect.', false);
+  if (newPwd.length < 4)         return pwdMsg('New password must be at least 4 characters.', false);
+  if (newPwd !== confPwd)        return pwdMsg('Passwords do not match.', false);
+
+  saveAdminCreds({ username: creds.username, password: newPwd });
+  document.getElementById('admin-cur-pwd').value   = '';
+  document.getElementById('admin-new-pwd').value   = '';
+  document.getElementById('admin-confirm-pwd').value = '';
+  pwdMsg('Password updated successfully!', true);
+  showToast('Admin password updated!');
+}
+
+function adminResetLeaderboard() {
+  showModal('&#9888;', 'Reset Leaderboard?',
+    'This will set ALL user points to 0. Quiz history is preserved. This cannot be undone.',
+    () => {
+      const all = getAllUsers();
+      Object.keys(all).forEach(k => { all[k].points = 0; });
+      saveAllUsers(all);
+      showToast('Leaderboard reset — all points set to 0.');
+      renderAdminOverview();
+    });
+}
+
+function adminDeleteAllUsers() {
+  showModal('&#128680;', 'Delete ALL Users?',
+    'This permanently removes every registered account. It absolutely cannot be undone.',
+    () => {
+      saveAllUsers({});
+      clearSession();
+      renderAdminUsers();
+      renderAdminOverview();
+      showToast('All user accounts deleted.');
+    });
 }
 
 // ─── BOOT ──────────────────────────────────────

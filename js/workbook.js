@@ -476,18 +476,20 @@ function generateWorkbookPDF(subject, topic, grade) {
     const startY = addPageHeader(pageNum);
     colY[0] = startY;
     colY[1] = startY;
+    const perCol = 4;  // 4 questions per column keeps all content within 264 mm page height
     for (let i = startIdx; i < endIdx; i++) {
-      const col  = i < startIdx + 5 ? 0 : 1;
+      const col  = i < startIdx + perCol ? 0 : 1;
       const colX = ML + col * (COL_W + 6);
       colY[col] = drawQ(i + 1, questions[i], colX, colY[col], COL_W);
     }
   }
 
-  renderQPage(2,  0, 10);  // Q1-10
-  renderQPage(3, 10, 20);  // Q11-20
+  renderQPage(2,  0,  8);  // Q1-8   (4 per column)
+  renderQPage(3,  8, 16);  // Q9-16  (4 per column)
+  renderQPage(4, 16, 20);  // Q17-20 (4 in left column only)
 
   // ================================================
-  // PAGE 4 - ANSWER KEY
+  // PAGE 5 - ANSWER KEY
   // ================================================
   doc.addPage();
 
@@ -497,7 +499,7 @@ function generateWorkbookPDF(subject, topic, grade) {
   sf('bold', 10, WB.white);
   doc.text('Answer Key  |  ' + subjectLabel + ' Grade ' + grade + '  |  ' + topicLabel, ML, 8);
   sf('normal', 7.5, [200, 255, 200]);
-  doc.text('Page 4', W - MR, 8, { align: 'right' });
+  doc.text('Page 5', W - MR, 8, { align: 'right' });
 
   let ay = 22;
   sf('bold', 13, WB.dark);
