@@ -1252,7 +1252,7 @@ function handleAdminLogin() {
   const errEl    = document.getElementById('admin-login-error');
   if (username !== creds.username || password !== creds.password) {
     errEl.textContent   = 'Invalid username or password.';
-    errEl.style.display = 'block';
+    errEl.style.display = 'flex';
     return;
   }
   closeAdminLogin();
@@ -1260,7 +1260,15 @@ function handleAdminLogin() {
 }
 
 function adminLogout() {
+  // Close mobile sidebar if open before leaving
+  const layout = document.getElementById('admin-layout');
+  if (layout) layout.classList.remove('sidebar-open');
   showScreen('landing');
+}
+
+function toggleAdminSidebar() {
+  const layout = document.getElementById('admin-layout');
+  if (layout) layout.classList.toggle('sidebar-open');
 }
 
 function switchAdminTab(tab) {
@@ -1270,6 +1278,10 @@ function switchAdminTab(tab) {
   if (tabEl) tabEl.classList.add('active');
   const navEl = document.getElementById('anav-' + tab);
   if (navEl) navEl.classList.add('active');
+
+  // Close sidebar on mobile when a tab is tapped
+  const layout = document.getElementById('admin-layout');
+  if (layout && window.innerWidth <= 768) layout.classList.remove('sidebar-open');
 
   // Lazy-render on first visit to each tab
   if (tab === 'users')     renderAdminUsers();
@@ -1805,36 +1817,42 @@ function openQuestionModal(id) {
     `<option value="${k}" ${k===prefill.topic?'selected':''}>${v}</option>`
   ).join('');
 
-  // Build option rows (radio marks correct answer)
+  // Build option rows (radio marks correct answer) — with letter badge A/B/C/D
   const optRows = opts.map((o, i) => {
     const isCorrect = (o === prefill.answer) || (i===0 && !prefill.answer);
+    const letter = String.fromCharCode(65 + i);
     return `<div class="q-option-row">
       <input type="radio" name="q-correct" id="q-opt-radio-${i}" value="${i}" ${isCorrect?'checked':''}>
-      <input type="text" class="q-opt-input auth-input" id="q-opt-${i}" value="${o.replace(/"/g,'&quot;')}" placeholder="Option ${String.fromCharCode(65+i)}">
+      <span class="q-opt-letter">${letter}</span>
+      <input type="text" class="q-opt-input auth-input" id="q-opt-${i}"
+        value="${o.replace(/"/g,'&quot;')}" placeholder="Option ${letter}">
     </div>`;
   }).join('');
 
   document.getElementById('question-modal-inner').innerHTML = `
     <div class="q-modal-header">
-      <h3>${isEdit ? '✏️ Edit Question' : '➕ Add Question'}</h3>
+      <div>
+        <div class="q-modal-header-title">${isEdit ? '✏️ Edit Question' : '➕ Add Question'}</div>
+        <div class="q-modal-header-sub">${isEdit ? 'Update the question details below' : 'Add a new question to the quiz bank'}</div>
+      </div>
       <button class="modal-close-x" onclick="closeQuestionModal()">✕</button>
     </div>
     <div class="q-modal-body">
       <div class="q-modal-row">
         <div class="q-modal-field">
-          <label>Subject *</label>
+          <label>Subject <span class="q-required">*</span></label>
           <select id="qm-subject" onchange="qmSubjectChanged()">
             ${subjOpts}
           </select>
         </div>
         <div class="q-modal-field">
-          <label>Grade *</label>
+          <label>Grade <span class="q-required">*</span></label>
           <select id="qm-grade">
             ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}" ${String(g)===String(prefill.grade)?'selected':''}>Grade ${g}</option>`).join('')}
           </select>
         </div>
         <div class="q-modal-field">
-          <label>Topic *</label>
+          <label>Topic <span class="q-required">*</span></label>
           <select id="qm-topic">
             ${topicHtml}
           </select>
@@ -1842,14 +1860,22 @@ function openQuestionModal(id) {
       </div>
       <div class="q-modal-field">
         <label>Context <span class="q-optional">(optional — passage shown above question)</span></label>
-        <input type="text" id="qm-context" class="auth-input" placeholder='e.g. "My ___ is coming to visit."' value="${prefill.context.replace(/"/g,'&quot;')}">
+        <input type="text" id="qm-context" class="auth-input"
+          placeholder='e.g. "My ___ is coming to visit."'
+          value="${prefill.context.replace(/"/g,'&quot;')}">
       </div>
       <div class="q-modal-field">
-        <label>Question *</label>
-        <input type="text" id="qm-question" class="auth-input" placeholder='e.g. "Which word is spelled correctly?"' value="${prefill.question.replace(/"/g,'&quot;')}">
+        <label>Question <span class="q-required">*</span></label>
+        <input type="text" id="qm-question" class="auth-input"
+          placeholder='e.g. "Which word is spelled correctly?"'
+          value="${prefill.question.replace(/"/g,'&quot;')}">
       </div>
       <div class="q-modal-field">
-        <label>Options &amp; Answer <span class="q-optional">(● = correct answer)</span></label>
+        <div class="q-options-label">
+          <i class="fas fa-list-ul"></i>
+          Options &amp; Answer
+          <span class="q-optional">(● = correct answer)</span>
+        </div>
         <div id="qm-options">${optRows}</div>
       </div>
       <div id="qm-error" class="q-modal-error" style="display:none"></div>
@@ -1886,7 +1912,7 @@ function saveQuestionFromModal() {
   const errEl = document.getElementById('qm-error');
   function showErr(msg) {
     errEl.textContent = msg;
-    errEl.style.display = 'block';
+    errEl.style.display = 'flex';
   }
   errEl.style.display = 'none';
 

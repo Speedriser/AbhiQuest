@@ -908,9 +908,24 @@
 
     <!-- ===== ADMIN SCREEN ===== -->
     <div id="screen-admin" class="screen">
-      <div class="admin-layout">
+      <div class="admin-layout" id="admin-layout">
+
+        <!-- Mobile top bar (only visible on small screens) -->
+        <div class="admin-mobile-topbar">
+          <button class="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <span class="admin-mobile-title">RADT<span>Quest</span> Admin</span>
+          <button class="admin-hamburger" onclick="adminLogout()" aria-label="Logout" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+
+        <!-- Overlay (closes sidebar when tapped on mobile) -->
+        <div class="admin-sidebar-overlay" id="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
         <!-- Sidebar -->
-        <aside class="admin-sidebar">
+        <aside class="admin-sidebar" id="admin-sidebar">
           <div class="admin-brand">
             <span style="font-size:28px">&#129504;</span>
             <div>
@@ -1063,20 +1078,32 @@
 
   <!-- Admin Login Modal -->
   <div id="admin-login-modal" class="modal-overlay" style="display:none" onclick="closeAdminLogin()">
-    <div class="modal admin-login-modal-box" onclick="event.stopPropagation()">
-      <div class="modal-icon">&#128274;</div>
-      <h3 style="margin-bottom:4px">Admin Login</h3>
-      <p style="color:#6b7280;font-size:13px;margin-bottom:20px">Enter administrator credentials</p>
-      <input type="text" id="admin-username-input" class="auth-input" placeholder="Username"
-        onkeydown="if(event.key==='Enter')document.getElementById('admin-password-input').focus()"
-        style="margin-bottom:10px;">
-      <input type="password" id="admin-password-input" class="auth-input" placeholder="Password"
-        onkeydown="if(event.key==='Enter')handleAdminLogin()"
-        style="margin-bottom:10px;">
-      <div id="admin-login-error" style="color:#ff4b4b;font-size:13px;margin-bottom:8px;display:none;text-align:left;"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeAdminLogin()">Cancel</button>
-        <button class="btn btn-primary" onclick="handleAdminLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
+    <div class="admin-login-box" onclick="event.stopPropagation()">
+      <!-- Header gradient -->
+      <div class="admin-login-header">
+        <div class="admin-login-icon">🛡️</div>
+        <h3>Admin Login</h3>
+        <p>Enter your administrator credentials</p>
+      </div>
+      <!-- Form -->
+      <div class="admin-login-form">
+        <div class="auth-input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" id="admin-username-input" class="auth-input" placeholder="Username"
+            onkeydown="if(event.key==='Enter')document.getElementById('admin-password-input').focus()">
+        </div>
+        <div class="auth-input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="admin-password-input" class="auth-input" placeholder="Password"
+            onkeydown="if(event.key==='Enter')handleAdminLogin()">
+        </div>
+        <div id="admin-login-error" class="admin-login-error" style="display:none;"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="handleAdminLogin()">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="closeAdminLogin()">
+          Cancel
+        </button>
       </div>
     </div>
   </div>
