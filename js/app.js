@@ -64,6 +64,7 @@ let currentDiff    = null;   // kept for backward-compat
 let currentGrade   = null;   // '1' through '8'
 let currentScreen  = 'landing';
 let challengeQuestions = null;
+let _settingHash   = false;  // prevents hashchange loop when showScreen updates the URL
 
 // ─── SUBJECT CONFIGURATION (extensible) ────────
 // To add a new subject: add an entry here with label, icon, topics, hasDynamicGenerator.
@@ -200,7 +201,72 @@ function showScreen(name) {
   if (name === 'profile')     renderProfile();
   if (name === 'results')     {} // populated by finishQuiz()
   if (name === 'admin')       { renderAdminOverview(); renderAdminUsers(); renderAdminActivity(); renderAdminQuestions(); switchAdminTab('overview'); }
+
+  // ── Update URL hash so the browser tracks history ──
+  // Set flag to prevent the hashchange listener from re-triggering this call
+  _settingHash = true;
+  if (window.location.hash !== '#' + name) {
+    window.location.hash = name;
+  }
+  setTimeout(() => { _settingHash = false; }, 50);
 }
+
+// ─── HASH ROUTING ──────────────────────────────
+/**
+ * Screens the user can navigate to directly via URL hash.
+ * Stateful screens (quiz, results) are excluded — they need in-session state.
+ */
+const DIRECT_NAV_SCREENS = new Set([
+  'landing', 'auth', 'home', 'quiz-setup',
+  'shop', 'leaderboard', 'profile', 'admin'
+]);
+
+function navigateToHash(hash) {
+  const isAdmin  = localStorage.getItem(ADMIN_SESSION_KEY) === '1';
+  const loggedIn = !!currentUser;
+
+  // ── Admin ───────────────────────────────────────────────────
+  if (hash === 'admin') {
+    if (isAdmin) { showScreen('admin'); }
+    else         { showScreen('landing'); }
+    return;
+  }
+
+  // ── Stateful quiz screens — can't restore from URL ──────────
+  if (hash === 'quiz' || hash === 'results' || hash === 'workbook') {
+    showScreen(loggedIn ? 'home' : 'landing');
+    return;
+  }
+
+  // ── Public screens ──────────────────────────────────────────
+  if (hash === 'landing') {
+    // If already logged in, skip landing and go home
+    showScreen(loggedIn ? 'home' : 'landing');
+    return;
+  }
+  if (hash === 'auth') {
+    showScreen(loggedIn ? 'home' : 'auth');
+    return;
+  }
+
+  // ── Screens that require a logged-in user ───────────────────
+  const userScreens = ['home', 'quiz-setup', 'shop', 'leaderboard', 'profile'];
+  if (userScreens.includes(hash)) {
+    if (loggedIn) { showScreen(hash); }
+    else          { showScreen('landing'); }
+    return;
+  }
+
+  // ── Unknown hash — sensible default ────────────────────────
+  showScreen(loggedIn ? 'home' : 'landing');
+}
+
+// Listen for browser back / forward button presses
+window.addEventListener('hashchange', () => {
+  if (_settingHash) return;  // triggered by showScreen itself — ignore
+  const hash = (window.location.hash || '').replace('#', '').toLowerCase() || 'landing';
+  navigateToHash(hash);
+});
 
 // ─── AUTH ──────────────────────────────────────
 function showAuth(mode) {
@@ -2026,7 +2092,9 @@ function duplicateBuiltinQuestion(subj, grade, qIdx) {
 
 // ─── BOOT ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Restore admin session first (takes priority)
+  const initHash = (window.location.hash || '').replace('#', '').toLowerCase();
+
+  // 1. Restore admin session first (takes priority over hash)
   if (localStorage.getItem(ADMIN_SESSION_KEY) === '1') {
     showScreen('admin');
     return;
@@ -2039,11 +2107,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user) {
       currentUser = user;
       updateDayStreak();
-      showScreen('home');
+      // Honour the hashed screen the user was on (e.g. #shop, #leaderboard)
+      // but exclude stateful/admin/auth screens that can't be restored cold
+      const restorableScreens = ['home', 'shop', 'leaderboard', 'profile', 'quiz-setup'];
+      if (initHash && restorableScreens.includes(initHash)) {
+        showScreen(initHash);
+      } else {
+        showScreen('home');
+      }
       return;
     }
   }
 
-  // 3. Fall through to landing
-  showScreen('landing');
+  // 3. No session — honour a public hash or go to landing
+  if (initHash === 'auth') {
+    showScreen('auth');
+  } else {
+    showScreen('landing');
+  }
 });
