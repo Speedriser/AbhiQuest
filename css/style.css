@@ -2081,7 +2081,11 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
 }
 .admin-q-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  min-height: 34px;   /* stops card from jumping height on confirm-state */
+  transition: all .15s;
 }
 .btn-sm {
   padding: 5px 12px !important;

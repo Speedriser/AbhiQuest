@@ -105,6 +105,7 @@ function getSubjectConfig() {
 const USERS_KEY              = 'radtquest_users';
 const SESSION_KEY            = 'radtquest_session';
 const CUSTOM_QUESTIONS_KEY   = 'radtquest_custom_questions';
+const ADMIN_SESSION_KEY      = 'radtquest_admin_session';
 
 // ─── CUSTOM QUESTION STORAGE ───────────────────
 function getCustomQuestions() {
@@ -1256,10 +1257,12 @@ function handleAdminLogin() {
     return;
   }
   closeAdminLogin();
+  localStorage.setItem(ADMIN_SESSION_KEY, '1');   // persist so refresh restores admin
   showScreen('admin');
 }
 
 function adminLogout() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);       // clear persisted session
   // Close mobile sidebar if open before leaving
   const layout = document.getElementById('admin-layout');
   if (layout) layout.classList.remove('sidebar-open');
@@ -1714,7 +1717,7 @@ function _rebuildQuestionList() {
     const ctx       = q.context ? `<div class="admin-q-ctx">📄 ${q.context.slice(0,80)}${q.context.length>80?'…':''}</div>` : '';
 
     if (isCustom) {
-      return `<div class="admin-q-item custom">
+      return `<div class="admin-q-item custom" data-qid="${q.id}">
         <div class="admin-q-header">
           <span class="admin-q-badge custom">CUSTOM</span>
           <span class="admin-q-meta">${gradeStr} · ${subjStr} · ${topicStr}</span>
@@ -1964,16 +1967,31 @@ function editAdminQuestion(id) {
 }
 
 function deleteAdminQuestion(id) {
-  const all = getCustomQuestions();
-  const q   = all.find(cq => cq.id === id);
-  if (!q) return;
-  showModal('🗑️', 'Delete Question?',
-    `Delete: "${q.question.slice(0, 80)}${q.question.length > 80 ? '…' : ''}"? This cannot be undone.`,
-    () => {
-      saveCustomQuestions(getCustomQuestions().filter(cq => cq.id !== id));
-      showToast('Question deleted.');
-      _rebuildQuestionList();
-    });
+  // Show inline confirmation inside the question card (avoids z-index/overflow issues with shared modal)
+  const card = document.querySelector(`.admin-q-item[data-qid="${id}"]`);
+  if (!card) return;
+  const actionsEl = card.querySelector('.admin-q-actions');
+  if (!actionsEl) return;
+  // Already showing confirm state? Abort to avoid double-bind
+  if (actionsEl.dataset.confirming) return;
+  actionsEl.dataset.confirming = '1';
+  const original = actionsEl.innerHTML;
+  actionsEl.innerHTML = `
+    <span style="font-size:13px;font-weight:700;color:#dc2626;margin-right:6px">Delete this question?</span>
+    <button class="btn btn-sm admin-danger-btn" id="aq-del-yes-${id}">
+      <i class="fas fa-check"></i> Yes, Delete
+    </button>
+    <button class="btn btn-sm btn-ghost" id="aq-del-no-${id}">Cancel</button>
+  `;
+  document.getElementById('aq-del-yes-' + id).onclick = () => {
+    saveCustomQuestions(getCustomQuestions().filter(cq => cq.id !== id));
+    showToast('Question deleted.');
+    _rebuildQuestionList();
+  };
+  document.getElementById('aq-del-no-' + id).onclick = () => {
+    delete actionsEl.dataset.confirming;
+    actionsEl.innerHTML = original;
+  };
 }
 
 function duplicateBuiltinQuestion(subj, grade, qIdx) {
@@ -2008,7 +2026,13 @@ function duplicateBuiltinQuestion(subj, grade, qIdx) {
 
 // ─── BOOT ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore session
+  // 1. Restore admin session first (takes priority)
+  if (localStorage.getItem(ADMIN_SESSION_KEY) === '1') {
+    showScreen('admin');
+    return;
+  }
+
+  // 2. Restore regular user session
   const savedEmail = getSavedSession();
   if (savedEmail) {
     const user = getUser(savedEmail);
@@ -2019,5 +2043,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
   }
+
+  // 3. Fall through to landing
   showScreen('landing');
 });
